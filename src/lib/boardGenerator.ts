@@ -84,7 +84,7 @@ function checkNoAdjacentSameResource(
     const neighbors = hexNeighbors(coordList[i]);
     for (const nb of neighbors) {
       const j = coordIndex[`${nb.q},${nb.r}`];
-      if (j !== undefined && j !== i && tiles[j].resource === tiles[i].resource) return false;
+      if (j !== undefined && j < tiles.length && j !== i && tiles[j].resource === tiles[i].resource) return false;
     }
   }
   return true;
@@ -99,7 +99,7 @@ function checkNoAdjacentReds(
     const neighbors = hexNeighbors(coordList[i]);
     for (const nb of neighbors) {
       const j = coordIndex[`${nb.q},${nb.r}`];
-      if (j !== undefined && tiles[j].number && reds.has(tiles[j].number!)) return false;
+      if (j !== undefined && j < tiles.length && tiles[j].number && reds.has(tiles[j].number!)) return false;
     }
   }
   return true;
@@ -113,7 +113,7 @@ function checkNoAdjacentSameNumber(
     const neighbors = hexNeighbors(coordList[i]);
     for (const nb of neighbors) {
       const j = coordIndex[`${nb.q},${nb.r}`];
-      if (j !== undefined && j > i && tiles[j].number === tiles[i].number) return false;
+      if (j !== undefined && j < tiles.length && j > i && tiles[j].number === tiles[i].number) return false;
     }
   }
   return true;

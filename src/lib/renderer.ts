@@ -29,40 +29,35 @@ function computeRenderParams(
 /* ── Terrain illustration functions ────────────────────────────────── */
 
 function drawForest(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
-  // Dark forest floor
-  const groundGrad = ctx.createLinearGradient(cx, cy - size * 0.4, cx, cy + size * 0.9);
-  groundGrad.addColorStop(0, 'rgba(10,28,10,0.0)');
-  groundGrad.addColorStop(0.55, 'rgba(10,28,10,0.65)');
-  groundGrad.addColorStop(1, 'rgba(6,18,6,0.90)');
+  // Subtle floor tint only — no heavy dark overlay
+  const groundGrad = ctx.createLinearGradient(cx, cy - size * 0.3, cx, cy + size);
+  groundGrad.addColorStop(0, 'rgba(8,22,8,0.0)');
+  groundGrad.addColorStop(1, 'rgba(5,15,5,0.35)');
   ctx.fillStyle = groundGrad;
   ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
 
-  function pine(x: number, y: number, s: number, dark: boolean, tiers = 4) {
+  function pine(x: number, y: number, s: number, tiers = 4) {
     // Trunk
-    const trunkW = s * 0.13;
+    const trunkW = s * 0.14;
     ctx.beginPath();
     ctx.rect(x - trunkW * 0.5, y + s * 0.18, trunkW, s * 0.44);
-    ctx.fillStyle = dark ? '#2e1608' : '#3d2009';
-    ctx.fill();
-    // Trunk shadow
-    ctx.beginPath();
-    ctx.rect(x - trunkW * 0.5, y + s * 0.18, trunkW * 0.4, s * 0.44);
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillStyle = '#4a2e10';
     ctx.fill();
 
-    // Foliage tiers from bottom to top
+    // Foliage tiers — bright vivid greens
     const tierDefs = [
-      { w: 0.84, h: 0.62, yOff: 0.32 },
-      { w: 0.67, h: 0.56, yOff: 0.06 },
-      { w: 0.50, h: 0.52, yOff: -0.18 },
-      { w: 0.34, h: 0.44, yOff: -0.38 },
+      { w: 0.86, h: 0.64, yOff: 0.30 },
+      { w: 0.68, h: 0.58, yOff: 0.04 },
+      { w: 0.52, h: 0.53, yOff: -0.20 },
+      { w: 0.36, h: 0.46, yOff: -0.41 },
     ].slice(0, tiers);
+
+    // Dark (left) and light (right) greens per tier — gets lighter towards tip
+    const darkGreens =  ['#1a6b18', '#1e7a1c', '#228e20', '#27a025'];
+    const lightGreens = ['#28a028', '#30b830', '#38cc38', '#42e040'];
 
     for (let i = 0; i < tierDefs.length; i++) {
       const { w, h, yOff } = tierDefs[i];
-      const baseR = dark ? 14 + i * 9 : 20 + i * 11;
-      const baseG = dark ? 48 + i * 22 : 65 + i * 26;
-      const alpha = 0.93 - i * 0.04;
 
       // Shadow (left) face
       ctx.beginPath();
@@ -70,7 +65,7 @@ function drawForest(ctx: CanvasRenderingContext2D, cx: number, cy: number, size:
       ctx.lineTo(x - w * s * 0.5, y + yOff * s + h * s * 0.5);
       ctx.lineTo(x, y + yOff * s + h * s * 0.28);
       ctx.closePath();
-      ctx.fillStyle = `rgba(${baseR - 6},${baseG - 14},${baseR - 6},${alpha})`;
+      ctx.fillStyle = darkGreens[i] || darkGreens[darkGreens.length - 1];
       ctx.fill();
 
       // Light (right) face
@@ -79,135 +74,101 @@ function drawForest(ctx: CanvasRenderingContext2D, cx: number, cy: number, size:
       ctx.lineTo(x, y + yOff * s + h * s * 0.28);
       ctx.lineTo(x + w * s * 0.5, y + yOff * s + h * s * 0.5);
       ctx.closePath();
-      ctx.fillStyle = `rgba(${baseR + 12},${baseG + 12},${baseR + 6},${alpha - 0.07})`;
+      ctx.fillStyle = lightGreens[i] || lightGreens[lightGreens.length - 1];
       ctx.fill();
 
-      // Snow tip on topmost tier
+      // Snow tip on topmost tier — bright and visible
       if (i === tiers - 1) {
         ctx.beginPath();
         ctx.moveTo(x, y + yOff * s - h * s * 0.5);
-        ctx.lineTo(x - w * s * 0.11, y + yOff * s - h * s * 0.14);
-        ctx.lineTo(x + w * s * 0.11, y + yOff * s - h * s * 0.10);
+        ctx.lineTo(x - w * s * 0.12, y + yOff * s - h * s * 0.13);
+        ctx.lineTo(x + w * s * 0.12, y + yOff * s - h * s * 0.09);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(215,230,215,0.28)';
+        ctx.fillStyle = 'rgba(235,248,235,0.82)';
         ctx.fill();
       }
     }
   }
 
-  // Back row — small, dark, receding
-  pine(cx - size * 0.38, cy - size * 0.20, size * 0.27, true, 3);
-  pine(cx + size * 0.16, cy - size * 0.26, size * 0.25, true, 3);
-  pine(cx + size * 0.38, cy - size * 0.18, size * 0.26, true, 3);
+  // Back row
+  pine(cx - size * 0.38, cy - size * 0.22, size * 0.27, 3);
+  pine(cx + size * 0.16, cy - size * 0.28, size * 0.25, 3);
+  pine(cx + size * 0.38, cy - size * 0.20, size * 0.26, 3);
   // Middle row
-  pine(cx - size * 0.22, cy - size * 0.08, size * 0.32, true, 4);
-  pine(cx + size * 0.26, cy - size * 0.06, size * 0.31, true, 4);
+  pine(cx - size * 0.22, cy - size * 0.08, size * 0.33, 4);
+  pine(cx + size * 0.26, cy - size * 0.06, size * 0.32, 4);
   // Front — large, prominent
-  pine(cx - size * 0.44, cy + size * 0.02, size * 0.27, true, 3);
-  pine(cx - size * 0.02, cy + size * 0.08, size * 0.38, false, 4);
-  pine(cx + size * 0.46, cy + size * 0.00, size * 0.27, true, 3);
-
-  // Mossy ground patches
-  for (let i = 0; i < 6; i++) {
-    const gx = cx + (((i * 173) % 100 - 50) / 100) * size * 0.80;
-    const gy = cy + size * 0.30 + ((i * 61) % 20 / 100) * size;
-    ctx.beginPath();
-    ctx.ellipse(gx, gy, size * 0.06 + (i % 3) * size * 0.02, size * 0.025, 0, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(18,52,18,0.5)`;
-    ctx.fill();
-  }
+  pine(cx - size * 0.44, cy + size * 0.04, size * 0.28, 3);
+  pine(cx - size * 0.02, cy + size * 0.10, size * 0.40, 4);
+  pine(cx + size * 0.46, cy + size * 0.02, size * 0.28, 3);
 }
 
 function drawFields(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
-  // Sky at the very top
-  const skyGrad = ctx.createLinearGradient(cx, cy - size * 0.82, cx, cy - size * 0.05);
-  skyGrad.addColorStop(0, 'rgba(155,205,245,0.42)');
-  skyGrad.addColorStop(0.55, 'rgba(195,165,48,0.12)');
-  skyGrad.addColorStop(1, 'rgba(195,155,40,0.0)');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(cx - size, cy - size, size * 2, size * 0.82);
-
-  // Rows of wheat — front-to-back, smaller & more compressed further away
-  const rows = [
-    { y: 0.38, count: 4, xStart: -0.36, sp: 0.26, sc: 1.00 },
-    { y: 0.22, count: 5, xStart: -0.44, sp: 0.23, sc: 0.86 },
-    { y: 0.08, count: 6, xStart: -0.48, sp: 0.21, sc: 0.74 },
-    { y: -0.06, count: 7, xStart: -0.50, sp: 0.19, sc: 0.63 },
-    { y: -0.18, count: 8, xStart: -0.52, sp: 0.17, sc: 0.53 },
-    { y: -0.28, count: 8, xStart: -0.50, sp: 0.16, sc: 0.44 },
+  // Draw 5 bold wheat sheaves filling the hex
+  const sheaves = [
+    { x: -0.28, y: 0.14 },
+    { x:  0.00, y: 0.00 },
+    { x:  0.28, y: 0.14 },
+    { x: -0.14, y: -0.24 },
+    { x:  0.14, y: -0.24 },
   ];
 
-  for (const row of rows) {
-    for (let i = 0; i < row.count; i++) {
-      const sx = cx + (row.xStart + i * row.sp) * size;
-      const sy = cy + row.y * size;
-      const h = size * 0.30 * row.sc;
-      const lean = (i % 3 === 0 ? 0.013 : i % 3 === 1 ? -0.009 : 0.005);
+  for (const pos of sheaves) {
+    const bx = cx + pos.x * size;
+    const by = cy + pos.y * size;
+    const h = size * 0.48;
+
+    // 5 stalks per sheaf — spread slightly
+    for (let i = -2; i <= 2; i++) {
+      const sx = bx + i * size * 0.042;
+      const lean = i * 0.022;
 
       // Stalk
       ctx.beginPath();
-      ctx.moveTo(sx, sy + h * 0.48);
-      ctx.lineTo(sx + lean * size, sy - h * 0.44);
-      ctx.strokeStyle = `rgba(125,80,4,${0.72 * row.sc + 0.18})`;
-      ctx.lineWidth = Math.max(0.8, size * 0.021 * row.sc);
+      ctx.moveTo(sx, by + h * 0.46);
+      ctx.lineTo(sx + lean * size, by - h * 0.28);
+      ctx.strokeStyle = '#7a5810';
+      ctx.lineWidth = Math.max(1.4, size * 0.026);
       ctx.stroke();
 
-      // Side leaf
-      if (row.sc > 0.65) {
-        ctx.beginPath();
-        ctx.moveTo(sx + lean * size * 0.3, sy - h * 0.10);
-        ctx.quadraticCurveTo(
-          sx - size * 0.055 * row.sc,
-          sy - h * 0.20,
-          sx - size * 0.038 * row.sc,
-          sy - h * 0.32
-        );
-        ctx.strokeStyle = `rgba(118,76,5,${0.48 * row.sc})`;
-        ctx.lineWidth = Math.max(0.5, size * 0.014 * row.sc);
-        ctx.stroke();
-      }
-
-      // Grain head (vertical ellipse)
-      const headX = sx + lean * size;
-      const headY = sy - h * 0.44;
+      // Large grain head (oval)
       ctx.beginPath();
       ctx.ellipse(
-        headX,
-        headY - h * 0.22,
-        size * 0.030 * row.sc,
-        size * 0.135 * row.sc,
-        lean * 3,
-        0,
-        Math.PI * 2
+        sx + lean * size,
+        by - h * 0.46,
+        size * 0.052,
+        size * 0.185,
+        lean * 2,
+        0, Math.PI * 2
       );
-      ctx.fillStyle = `rgba(${200 - i},${148 - i * 2},${6 + i},${0.92 * row.sc + 0.04})`;
+      ctx.fillStyle = i % 2 === 0 ? '#e8a010' : '#f5c020';
       ctx.fill();
 
-      // Head highlight
+      // Highlight on grain head
       ctx.beginPath();
       ctx.ellipse(
-        headX - size * 0.009 * row.sc,
-        headY - h * 0.24,
-        size * 0.013 * row.sc,
-        size * 0.065 * row.sc,
-        lean * 3,
-        0,
-        Math.PI * 2
+        sx + lean * size - size * 0.014,
+        by - h * 0.50,
+        size * 0.020,
+        size * 0.080,
+        lean * 2,
+        0, Math.PI * 2
       );
-      ctx.fillStyle = `rgba(240,195,55,${0.38 * row.sc})`;
+      ctx.fillStyle = 'rgba(255,228,100,0.55)';
       ctx.fill();
     }
+
+    // Binding wrap around middle of sheaf
+    ctx.beginPath();
+    ctx.moveTo(bx - size * 0.10, by + h * 0.06);
+    ctx.lineTo(bx + size * 0.10, by + h * 0.06);
+    ctx.strokeStyle = '#5c3e0c';
+    ctx.lineWidth = Math.max(2.5, size * 0.044);
+    ctx.stroke();
   }
 }
 
 function drawMountains(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
-  // Pale sky
-  const skyGrad = ctx.createLinearGradient(cx, cy - size * 0.82, cx, cy - size * 0.08);
-  skyGrad.addColorStop(0, 'rgba(175,195,218,0.45)');
-  skyGrad.addColorStop(1, 'rgba(85,108,138,0.0)');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(cx - size, cy - size, size * 2, size * 0.82);
-
   function mountain(
     x: number, y: number,
     w: number, h: number,
@@ -269,13 +230,13 @@ function drawMountains(ctx: CanvasRenderingContext2D, cx: number, cy: number, si
     ctx.fill();
   }
 
-  // Distant background peaks (muted)
-  mountain(cx + size * 0.30, cy + size * 0.06, size * 0.52, size * 0.42, 'rgba(98,118,145,0.50)', 0.70, 0.30);
-  mountain(cx - size * 0.30, cy + size * 0.08, size * 0.48, size * 0.38, 'rgba(92,112,138,0.50)', 0.70, 0.28);
+  // Distant background peaks
+  mountain(cx + size * 0.30, cy + size * 0.06, size * 0.52, size * 0.42, 'rgba(108,132,162,0.72)', 0.80, 0.30);
+  mountain(cx - size * 0.30, cy + size * 0.08, size * 0.48, size * 0.38, 'rgba(100,124,155,0.72)', 0.80, 0.28);
   // Mid peaks
-  mountain(cx + size * 0.18, cy + size * 0.12, size * 0.62, size * 0.54, 'rgba(78,98,125,0.78)', 0.88, 0.35);
+  mountain(cx + size * 0.18, cy + size * 0.12, size * 0.62, size * 0.54, 'rgba(84,108,138,0.90)', 0.92, 0.35);
   // Front large peak
-  mountain(cx - size * 0.08, cy + size * 0.16, size * 0.72, size * 0.64, 'rgba(68,86,110,0.92)', 0.95, 0.38);
+  mountain(cx - size * 0.08, cy + size * 0.16, size * 0.72, size * 0.64, 'rgba(72,94,122,1.0)', 0.98, 0.40);
 
   // Foreground boulders
   const boulders = [
@@ -297,19 +258,11 @@ function drawMountains(ctx: CanvasRenderingContext2D, cx: number, cy: number, si
 }
 
 function drawPasture(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
-  // Sky
-  const skyGrad = ctx.createLinearGradient(cx, cy - size * 0.82, cx, cy - size * 0.08);
-  skyGrad.addColorStop(0, 'rgba(148,208,248,0.50)');
-  skyGrad.addColorStop(0.55, 'rgba(92,188,88,0.10)');
-  skyGrad.addColorStop(1, 'rgba(80,165,25,0.0)');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(cx - size, cy - size, size * 2, size * 0.82);
-
-  // Rolling hills (back to front)
+  // Rolling hills (back to front) — vivid green
   const hills = [
-    { x: 0.18, y: 0.08, rx: 0.72, ry: 0.44, c: 'rgba(72,158,24,0.48)' },
-    { x: -0.22, y: 0.16, rx: 0.64, ry: 0.40, c: 'rgba(66,148,20,0.52)' },
-    { x: 0.12, y: 0.30, rx: 0.68, ry: 0.42, c: 'rgba(60,138,18,0.56)' },
+    { x: 0.18, y: 0.08, rx: 0.72, ry: 0.44, c: 'rgba(80,175,28,0.72)' },
+    { x: -0.22, y: 0.16, rx: 0.64, ry: 0.40, c: 'rgba(72,162,22,0.76)' },
+    { x: 0.12, y: 0.30, rx: 0.68, ry: 0.42, c: 'rgba(65,148,20,0.80)' },
   ];
   for (const h of hills) {
     ctx.beginPath();
@@ -442,20 +395,13 @@ function drawPasture(ctx: CanvasRenderingContext2D, cx: number, cy: number, size
 }
 
 function drawHills(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number) {
-  // Warm sky tint at top
-  const skyGrad = ctx.createLinearGradient(cx, cy - size * 0.82, cx, cy - size * 0.05);
-  skyGrad.addColorStop(0, 'rgba(215,138,72,0.28)');
-  skyGrad.addColorStop(1, 'rgba(168,64,20,0.0)');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(cx - size, cy - size, size * 2, size * 0.82);
-
-  // Brick background — staggered rows
+  // Brick background — staggered rows — vivid red-orange
   const brickW = size * 0.238;
   const brickH = size * 0.108;
   const brickColors = [
-    'rgba(178,68,26,0.68)',
-    'rgba(162,56,20,0.68)',
-    'rgba(194,80,30,0.68)',
+    'rgba(196,72,28,0.90)',
+    'rgba(178,58,20,0.90)',
+    'rgba(212,84,32,0.90)',
   ];
   const mortarColor = 'rgba(74,26,8,0.55)';
 
@@ -933,7 +879,7 @@ export function renderBoard(canvas: HTMLCanvasElement, board: Board) {
   ctx.fillRect(0, 0, W, H);
 
   const allHexes = [
-    ...board.coordList,
+    ...board.tiles.map((t) => t.coord),
     ...(board.waterHexes || []),
   ];
   const { hexSize, origin } = computeRenderParams(allHexes, W, H, 32);

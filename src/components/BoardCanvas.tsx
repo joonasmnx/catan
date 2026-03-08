@@ -28,8 +28,8 @@ export default function BoardCanvas({ board }: Props) {
     }}>
       <canvas
         ref={canvasRef}
-        width={620}
-        height={620}
+        width={720}
+        height={720}
         style={{ display: 'block', borderRadius: 4 }}
       />
     </div>
