@@ -52,9 +52,9 @@ function drawForest(ctx: CanvasRenderingContext2D, cx: number, cy: number, size:
       { w: 0.36, h: 0.46, yOff: -0.41 },
     ].slice(0, tiers);
 
-    // Dark (left) and light (right) greens per tier — gets lighter towards tip
-    const darkGreens =  ['#1a6b18', '#1e7a1c', '#228e20', '#27a025'];
-    const lightGreens = ['#28a028', '#30b830', '#38cc38', '#42e040'];
+    // Dark (left) and light (right) — deep emerald, clearly different from pasture lime
+    const darkGreens =  ['#0d5228', '#10602e', '#137035', '#178040'];
+    const lightGreens = ['#1a8040', '#22984c', '#2ab058', '#32c868'];
 
     for (let i = 0; i < tierDefs.length; i++) {
       const { w, h, yOff } = tierDefs[i];
@@ -871,11 +871,19 @@ export function renderBoard(canvas: HTMLCanvasElement, board: Board) {
 
   ctx.clearRect(0, 0, W, H);
 
-  // Background
-  const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.7);
-  bgGrad.addColorStop(0, '#0e1824');
-  bgGrad.addColorStop(1, '#060c14');
+  // Background — warm board surface, clearly distinct from page bg
+  const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.72);
+  bgGrad.addColorStop(0, '#3a2c18');
+  bgGrad.addColorStop(0.55, '#2a1e10');
+  bgGrad.addColorStop(1, '#180e06');
   ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle texture / vignette
+  const vigGrad = ctx.createRadialGradient(W / 2, H / 2, W * 0.18, W / 2, H / 2, W * 0.72);
+  vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  vigGrad.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vigGrad;
   ctx.fillRect(0, 0, W, H);
 
   const allHexes = [

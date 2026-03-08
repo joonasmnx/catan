@@ -50,8 +50,8 @@ const SUB_SCORES: SubScore[] = [
 ];
 
 function scoreColor(v: number): string {
-  if (v >= 70) return '#5ecf62';
-  if (v >= 45) return '#ffaa20';
+  if (v >= 75) return '#5ecf62';
+  if (v >= 55) return '#ffaa20';
   return '#f45050';
 }
 
@@ -158,7 +158,7 @@ export default function ScorePanel({ cibi, attempts, mode, layout }: Props) {
           color: '#907050',
           lineHeight: 1.65,
         }}>
-          <strong style={{ color: '#b08840' }}>CIBI</strong> (Catan Intersection Balance Index) measures how fair this board is for all players — from 0 to 100. It checks that resources are evenly productive, settlement spots are varied, and powerful numbers are not clustered in one area. A higher score means a more balanced, less luck-dependent game.
+          <strong style={{ color: '#b08840' }}>CIBI</strong> (Catan Intersection Balance Index) rates board fairness. <strong style={{ color: '#b08840' }}>70–84 is a good board</strong>, 85+ is exceptional. It checks pip balance across all resources, settlement spot variety, and that 6s &amp; 8s aren&apos;t clustered. Same resource types are never directly adjacent.
         </div>
 
         {/* Sub-scores */}
@@ -198,7 +198,7 @@ export default function ScorePanel({ cibi, attempts, mode, layout }: Props) {
               )}
               <div>Attempts <span style={{ color: '#b08840', fontWeight: 'bold' }}>{attempts.toLocaleString()}</span></div>
               <div>Verdict <span style={{ color: totalScore! >= 70 ? '#5ecf62' : totalScore! >= 45 ? '#ffaa20' : '#f45050', fontWeight: 'bold' }}>
-                {totalScore! >= 70 ? 'Excellent board' : totalScore! >= 45 ? 'Decent board' : 'Try again'}
+                {totalScore! >= 85 ? 'Exceptional board' : totalScore! >= 70 ? 'Excellent board' : totalScore! >= 55 ? 'Decent board' : 'Try again'}
               </span></div>
             </div>
           </>

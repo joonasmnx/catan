@@ -47,8 +47,8 @@ export type GameMode = 'standard4' | 'standard56' | 'seafarers4' | 'seafarers56'
 export type LayoutType = 'classic' | 'archipelago' | 'twin';
 
 export const RESOURCE_COLORS: Record<Resource, { base: string; mid: string; light: string }> = {
-  forest:    { base: '#174f17', mid: '#278a27', light: '#38c038' },
-  pasture:   { base: '#3a7800', mid: '#58b800', light: '#7ed81a' },
+  forest:    { base: '#0e4a28', mid: '#177040', light: '#1ea058' },  // deep emerald-green
+  pasture:   { base: '#3a7800', mid: '#60c000', light: '#88e020' },  // bright lime-green
   fields:    { base: '#b88808', mid: '#dab018', light: '#f8d040' },
   mountains: { base: '#404e60', mid: '#5e7490', light: '#80a0c0' },
   hills:     { base: '#922a14', mid: '#c84020', light: '#e86040' },

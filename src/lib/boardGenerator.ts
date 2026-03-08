@@ -207,7 +207,9 @@ function scoreResourceClustering(tiles: Tile[], coordList: HexCoord[]): number {
   }
   if (count === 0) return 50;
   const avgMinDist = totalMinDist / count;
-  return Math.max(0, Math.min(100, (avgMinDist - 1) / 3 * 100));
+  // After the no-adjacent constraint, minDist ≥ 2 always.
+  // Map 2→50, 3→100 so valid boards span the full useful range.
+  return Math.max(0, Math.min(100, (avgMinDist - 1) / 2 * 100));
 }
 
 function scoreRedNumberSpread(tiles: Tile[], coordList: HexCoord[]): number {
@@ -224,7 +226,8 @@ function scoreRedNumberSpread(tiles: Tile[], coordList: HexCoord[]): number {
       pairs++;
     }
   }
-  return Math.max(0, Math.min(100, (totalDist / pairs / 5) * 100));
+  // Max distance on a 19-tile board ≈ 4; use 4 as the 100-point target.
+  return Math.max(0, Math.min(100, (totalDist / pairs / 4) * 100));
 }
 
 function scoreDesertPlacement(tiles: Tile[], coordList: HexCoord[]): number {
