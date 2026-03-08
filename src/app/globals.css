@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --gold: #d4a843;
+  --gold-dim: #907040;
+  --bg: #110e0a;
+  --panel: #1c1610;
+  --border: #4a3818;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(90,55,10,0.40) 0%, transparent 65%),
+    radial-gradient(ellipse at 50% 100%, rgba(20,10,5,0.55) 0%, transparent 60%);
+  color: #e8d5a3;
+  font-family: 'IM Fell English', Georgia, serif;
+  min-height: 100vh;
+}
