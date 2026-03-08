@@ -262,6 +262,12 @@
     <option value="seafarers4">Seafarers 4-Player (19 + water)</option>
     <option value="seafarers56">Seafarers 5–6 Player (30 + water)</option>
   </select>
+  <label for="layoutSelect" id="layoutLabel" style="display:none">MAP LAYOUT</label>
+  <select id="layoutSelect" style="display:none">
+    <option value="classic">Classic Island</option>
+    <option value="archipelago">Archipelago (3 Islands)</option>
+    <option value="twin">Twin Islands</option>
+  </select>
   <button id="generateBtn">Generate Board</button>
 </div>
 
@@ -509,14 +515,68 @@ function landCoords56p() {
 }
 
 /* Water ring: all hexes in the ring at radius+1 */
-function waterCoords(landHexes, landRadius) {
+function waterCoords(landHexes) {
   const landSet = new Set(landHexes.map(h => `${h.q},${h.r}`));
-  const candidates = hexDisk({ q: 0, r: 0 }, landRadius + 2);
+  // Auto-detect bounding radius so archipelago islands far from origin are covered
+  const maxDist = Math.max(...landHexes.map(h => hexDist(h, { q: 0, r: 0 })));
+  const candidates = hexDisk({ q: 0, r: 0 }, maxDist + 2);
   return candidates.filter(h => {
     if (landSet.has(`${h.q},${h.r}`)) return false;
-    // Must be adjacent to at least one land hex
     return hexNeighbors(h).some(n => landSet.has(`${n.q},${n.r}`));
   });
+}
+
+/* ── Island helpers ────────────────────────────────────────────────────
+   trimIsland: take the `count` hexes closest to `center` from a large disk.
+   This gives a rounded island shape of any size.
+   ──────────────────────────────────────────────────────────────────── */
+function trimIsland(center, count) {
+  const disk = hexDisk(center, 4); // large enough for any island size
+  return disk
+    .sort((a, b) => hexDist(a, center) - hexDist(b, center))
+    .slice(0, count);
+}
+
+/* Archipelago 4p — 3 islands (7 + 7 + 5 = 19 land tiles) */
+function landCoordsArchipelago4p() {
+  return [
+    ...trimIsland({ q: -4, r:  1 }, 7),
+    ...trimIsland({ q:  3, r: -4 }, 7),
+    ...trimIsland({ q:  1, r:  3 }, 5),
+  ];
+}
+
+/* Archipelago 56p — 3 islands (10 + 10 + 10 = 30 land tiles) */
+function landCoordsArchipelago56p() {
+  return [
+    ...trimIsland({ q: -5, r:  1 }, 10),
+    ...trimIsland({ q:  4, r: -6 }, 10),
+    ...trimIsland({ q:  1, r:  5 }, 10),
+  ];
+}
+
+/* Twin Islands 4p — 2 islands (10 + 9 = 19 land tiles) */
+function landCoordsTwinIslands4p() {
+  return [
+    ...trimIsland({ q: -4, r:  0 }, 10),
+    ...trimIsland({ q:  4, r: -3 }, 9),
+  ];
+}
+
+/* Twin Islands 56p — 2 islands (15 + 15 = 30 land tiles) */
+function landCoordsTwinIslands56p() {
+  return [
+    ...trimIsland({ q: -5, r:  1 }, 15),
+    ...trimIsland({ q:  5, r: -5 }, 15),
+  ];
+}
+
+/* Pick the right coordinate set based on mode + layout */
+function getLandCoords(mode, layout) {
+  const is56 = mode.includes('56');
+  if (layout === 'archipelago') return is56 ? landCoordsArchipelago56p() : landCoordsArchipelago4p();
+  if (layout === 'twin')        return is56 ? landCoordsTwinIslands56p() : landCoordsTwinIslands4p();
+  return is56 ? landCoords56p() : landCoords4p(); // 'classic'
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -805,12 +865,11 @@ function computeCIBI(tiles, coordList, coordIndex) {
 
 /* ── Main generation loop ────────────────────────────────────────────── */
 
-function generateBoard(mode) {
+function generateBoard(mode, layout = 'classic') {
   const is56 = mode.includes('56');
   const isSeafarers = mode.includes('seafarers');
-  const landRadius = is56 ? 3 : 2;
 
-  const coordList = is56 ? landCoords56p() : landCoords4p();
+  const coordList = getLandCoords(mode, layout);
 
   // Build lookup: "q,r" → index
   const coordIndex = {};
@@ -889,7 +948,7 @@ function generateBoard(mode) {
 
   // Add water & ports for seafarers
   if (isSeafarers) {
-    const waterHexes = waterCoords(coordList, landRadius);
+    const waterHexes = waterCoords(coordList);
     // Pick water hexes adjacent to land as port candidates
     const landSet = new Set(coordList.map(h => `${h.q},${h.r}`));
     const portCandidates = waterHexes.filter(w =>
@@ -951,26 +1010,65 @@ function hexCorners(cx, cy, size) {
   return corners;
 }
 
+function tracePath(corners) {
+  ctx.moveTo(corners[0].x, corners[0].y);
+  for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
+  ctx.closePath();
+}
+
 function drawHex(cx, cy, size, resource) {
   const corners = hexCorners(cx, cy, size);
   const col = RESOURCE_COLORS[resource] || RESOURCE_COLORS[R.WATER];
 
+  // Drop shadow
   ctx.beginPath();
-  ctx.moveTo(corners[0].x, corners[0].y);
-  for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
-  ctx.closePath();
+  tracePath(hexCorners(cx + 2, cy + 3, size * 0.97));
+  ctx.fillStyle = 'rgba(0,0,0,0.32)';
+  ctx.fill();
 
-  // Radial gradient fill
-  const grad = ctx.createRadialGradient(cx - size * 0.2, cy - size * 0.2, size * 0.05,
-                                         cx, cy, size * 1.1);
-  grad.addColorStop(0, col.light);
-  grad.addColorStop(0.5, col.mid);
-  grad.addColorStop(1, col.base);
-
+  // Main hex fill — radial gradient off-center for depth
+  ctx.beginPath();
+  tracePath(corners);
+  const grad = ctx.createRadialGradient(
+    cx - size * 0.28, cy - size * 0.28, size * 0.04,
+    cx + size * 0.1,  cy + size * 0.1,  size * 1.05
+  );
+  grad.addColorStop(0,   col.light);
+  grad.addColorStop(0.4, col.mid);
+  grad.addColorStop(1,   col.base);
   ctx.fillStyle = grad;
   ctx.fill();
 
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  // Bold outer border
+  ctx.strokeStyle = 'rgba(0,0,0,0.72)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Inner bevel ring (lighter frame, like a raised tile edge)
+  ctx.beginPath();
+  tracePath(hexCorners(cx, cy, size * 0.87));
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Upper-left edge highlight (light source top-left)
+  // Flat-top corners: 0=right, 1=lower-right, 2=lower-left, 3=left, 4=upper-left, 5=upper-right
+  ctx.beginPath();
+  ctx.moveTo(corners[3].x, corners[3].y);
+  ctx.lineTo(corners[4].x, corners[4].y);
+  ctx.lineTo(corners[5].x, corners[5].y);
+  ctx.lineTo(corners[0].x, corners[0].y);
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Lower-right shadow edge
+  ctx.beginPath();
+  ctx.moveTo(corners[0].x, corners[0].y);
+  ctx.lineTo(corners[1].x, corners[1].y);
+  ctx.lineTo(corners[2].x, corners[2].y);
+  ctx.lineTo(corners[3].x, corners[3].y);
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 }
@@ -1045,6 +1143,26 @@ function drawPort(cx, cy, port, size) {
   }
 }
 
+/* Auto-scale: fit all hexes into the canvas with padding */
+function computeRenderParams(hexCoords, canvasW, canvasH, padding) {
+  if (hexCoords.length === 0) return { hexSize: 60, origin: { x: canvasW / 2, y: canvasH / 2 } };
+  const pts = hexCoords.map(h => axialToPixel(h.q, h.r, 1, { x: 0, y: 0 }));
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rangeX = (maxX - minX) + 2;
+  const rangeY = (maxY - minY) + Math.sqrt(3);
+  const hexSize = Math.min(70, Math.floor(Math.min(
+    (canvasW - padding * 2) / rangeX,
+    (canvasH - padding * 2) / rangeY
+  )));
+  const origin = {
+    x: canvasW / 2 - ((minX + maxX) / 2) * hexSize,
+    y: canvasH / 2 - ((minY + maxY) / 2) * hexSize,
+  };
+  return { hexSize, origin };
+}
+
 function renderBoard(board, mode) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1053,11 +1171,10 @@ function renderBoard(board, mode) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const isSeafarers = mode.includes('seafarers');
-  const is56 = mode.includes('56');
 
-  // Determine hex size and origin based on mode
-  const hexSize = is56 ? (isSeafarers ? 46 : 52) : (isSeafarers ? 60 : 68);
-  const origin = { x: canvas.width / 2, y: canvas.height / 2 };
+  // Auto-scale based on all hexes present
+  const allHexes = [...board.coordList, ...(board.waterHexes || [])];
+  const { hexSize, origin } = computeRenderParams(allHexes, canvas.width, canvas.height, 40);
 
   // Draw water ring first (behind land)
   if (isSeafarers && board.waterHexes) {
@@ -1174,8 +1291,10 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   // Yield to browser to paint status before blocking computation
   await new Promise(r => setTimeout(r, 20));
 
+  const layout = document.getElementById('layoutSelect').value;
+
   try {
-    const board = generateBoard(mode);
+    const board = generateBoard(mode, layout);
     renderBoard(board, mode);
     updateScorePanel(board.cibi, board.attempts);
     status.textContent = `Board generated — CIBI score: ${board.cibi.total}/100`;
@@ -1186,6 +1305,13 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
 
   btn.disabled = false;
   generating = false;
+});
+
+/* ── Show/hide layout select for seafarers modes ───────────────────────── */
+document.getElementById('modeSelect').addEventListener('change', function () {
+  const isSeafarers = this.value.includes('seafarers');
+  document.getElementById('layoutLabel').style.display  = isSeafarers ? '' : 'none';
+  document.getElementById('layoutSelect').style.display = isSeafarers ? '' : 'none';
 });
 
 /* ── Init ─────────────────────────────────────────────────────────────── */
