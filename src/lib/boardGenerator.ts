@@ -77,12 +77,12 @@ function buildNumberList(mode: string): number[] {
 }
 
 function checkNoAdjacentSameResource(
-  tiles: Tile[], coordList: HexCoord[], coordIndex: Record<string, number>
+  tiles: Tile[], coordIndex: Record<string, number>
 ): boolean {
   for (let i = 0; i < tiles.length; i++) {
     if (tiles[i].resource === R.DESERT) continue;
-    const neighbors = hexNeighbors(coordList[i]);
-    for (const nb of neighbors) {
+    // Use tile's own coord (matches how coordIndex was built)
+    for (const nb of hexNeighbors(tiles[i].coord)) {
       const j = coordIndex[`${nb.q},${nb.r}`];
       if (j !== undefined && j < tiles.length && j !== i && tiles[j].resource === tiles[i].resource) return false;
     }
@@ -91,13 +91,12 @@ function checkNoAdjacentSameResource(
 }
 
 function checkNoAdjacentReds(
-  tiles: Tile[], coordList: HexCoord[], coordIndex: Record<string, number>
+  tiles: Tile[], coordIndex: Record<string, number>
 ): boolean {
   const reds = new Set([6, 8]);
   for (let i = 0; i < tiles.length; i++) {
     if (!tiles[i].number || !reds.has(tiles[i].number!)) continue;
-    const neighbors = hexNeighbors(coordList[i]);
-    for (const nb of neighbors) {
+    for (const nb of hexNeighbors(tiles[i].coord)) {
       const j = coordIndex[`${nb.q},${nb.r}`];
       if (j !== undefined && j < tiles.length && tiles[j].number && reds.has(tiles[j].number!)) return false;
     }
@@ -106,15 +105,62 @@ function checkNoAdjacentReds(
 }
 
 function checkNoAdjacentSameNumber(
-  tiles: Tile[], coordList: HexCoord[], coordIndex: Record<string, number>
+  tiles: Tile[], coordIndex: Record<string, number>
 ): boolean {
   for (let i = 0; i < tiles.length; i++) {
     if (!tiles[i].number) continue;
-    const neighbors = hexNeighbors(coordList[i]);
-    for (const nb of neighbors) {
+    for (const nb of hexNeighbors(tiles[i].coord)) {
       const j = coordIndex[`${nb.q},${nb.r}`];
       if (j !== undefined && j < tiles.length && j > i && tiles[j].number === tiles[i].number) return false;
     }
+  }
+  return true;
+}
+
+/** Distribute numbers so each resource type gets a spread of pip values.
+ *  Sorts numbers best-first, then assigns round-robin across resource types. */
+function assignNumbersBalanced(tiles: Tile[], mode: string): boolean {
+  const numberPool = buildNumberList(mode);
+  const resources = [R.FOREST, R.PASTURE, R.FIELDS, R.MOUNTAINS, R.HILLS];
+  const groupIndices: Record<string, number[]> = {};
+  for (const r of resources) groupIndices[r] = [];
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i].resource !== R.DESERT && groupIndices[tiles[i].resource]) {
+      groupIndices[tiles[i].resource].push(i);
+    }
+  }
+  const nonDesertCount = resources.reduce((s, r) => s + groupIndices[r].length, 0);
+  if (nonDesertCount !== numberPool.length) return false;
+
+  // Sort numbers best-first (highest pip value first), shuffle within same pip tier for variety
+  const sortedNums = [...numberPool].sort((a, b) => {
+    const diff = (PIPS[b] || 0) - (PIPS[a] || 0);
+    return diff !== 0 ? diff : Math.random() - 0.5;
+  });
+
+  // Round-robin slot sequence across resources (shuffled order per generation)
+  const activeResources = shuffle(resources.filter(r => groupIndices[r].length > 0));
+  const remaining: Record<string, number> = {};
+  for (const r of activeResources) remaining[r] = groupIndices[r].length;
+  const slots: string[] = [];
+  let anyLeft = true;
+  while (anyLeft) {
+    anyLeft = false;
+    for (const r of activeResources) {
+      if (remaining[r] > 0) { slots.push(r); remaining[r]--; anyLeft = true; }
+    }
+  }
+
+  // Pair sorted numbers with slots → each resource gets proportional share of good numbers
+  const assignedNums: Record<string, number[]> = {};
+  for (const r of resources) assignedNums[r] = [];
+  for (let k = 0; k < slots.length; k++) assignedNums[slots[k]].push(sortedNums[k]);
+
+  // Assign to tile positions (shuffle within each resource for positional variety)
+  for (const r of resources) {
+    const nums = shuffle(assignedNums[r]);
+    const indices = shuffle([...groupIndices[r]]);
+    for (let k = 0; k < indices.length; k++) tiles[indices[k]].number = nums[k];
   }
   return true;
 }
@@ -133,7 +179,8 @@ function scorePipBalance(tiles: Tile[]): number {
   const mean = avgs.reduce((s, v) => s + v, 0) / avgs.length;
   const variance = avgs.reduce((s, v) => s + (v - mean) ** 2, 0) / avgs.length;
   const stdDev = Math.sqrt(variance);
-  return Math.max(0, Math.min(100, (1 - stdDev / 4.0) * 100));
+  // Max realistic stdDev between resource pip averages is ~2.5; use 2.5 for full-range sensitivity
+  return Math.max(0, Math.min(100, (1 - stdDev / 2.5) * 100));
 }
 
 function scoreIntersectionQuality(
@@ -182,13 +229,12 @@ function scoreIntersectionQuality(
   return Math.min(100, totalScore / vertexTriplets.length);
 }
 
-function scoreResourceClustering(tiles: Tile[], coordList: HexCoord[]): number {
+function scoreResourceClustering(tiles: Tile[]): number {
   const resources = [R.FOREST, R.PASTURE, R.FIELDS, R.MOUNTAINS, R.HILLS];
   const byResource: Record<string, HexCoord[]> = {};
   for (const r of resources) byResource[r] = [];
-  for (let i = 0; i < tiles.length; i++) {
-    const t = tiles[i];
-    if (byResource[t.resource]) byResource[t.resource].push(coordList[i]);
+  for (const t of tiles) {
+    if (byResource[t.resource]) byResource[t.resource].push(t.coord);
   }
   let totalMinDist = 0;
   let count = 0;
@@ -199,42 +245,46 @@ function scoreResourceClustering(tiles: Tile[], coordList: HexCoord[]): number {
       let minD = Infinity;
       for (let j = 0; j < coords.length; j++) {
         if (i === j) continue;
-        minD = Math.min(minD, hexDist(coords[i], coords[j]));
+        const d = hexDist(coords[i], coords[j]);
+        if (d < 2) return 0; // adjacent same-resource tiles → max penalty
+        minD = Math.min(minD, d);
       }
       totalMinDist += minD;
       count++;
     }
   }
-  if (count === 0) return 50;
+  if (count === 0) return 100;
   const avgMinDist = totalMinDist / count;
-  // After the no-adjacent constraint, minDist ≥ 2 always.
-  // Map 2→50, 3→100 so valid boards span the full useful range.
-  return Math.max(0, Math.min(100, (avgMinDist - 1) / 2 * 100));
+  // After no-adjacent constraint, minDist >= 2.
+  // Map 2→20, 3→70, ≥4→100 to strongly reward well-separated resources.
+  return Math.max(0, Math.min(100, (avgMinDist - 2) * 50 + 20));
 }
 
-function scoreRedNumberSpread(tiles: Tile[], coordList: HexCoord[]): number {
+function scoreRedNumberSpread(tiles: Tile[]): number {
   const reds: HexCoord[] = [];
-  for (let i = 0; i < tiles.length; i++) {
-    if (tiles[i].number === 6 || tiles[i].number === 8) reds.push(coordList[i]);
+  for (const t of tiles) {
+    if (t.number === 6 || t.number === 8) reds.push(t.coord);
   }
   if (reds.length < 2) return 100;
   let totalDist = 0;
   let pairs = 0;
   for (let i = 0; i < reds.length; i++) {
     for (let j = i + 1; j < reds.length; j++) {
-      totalDist += hexDist(reds[i], reds[j]);
+      const d = hexDist(reds[i], reds[j]);
+      if (d < 2) return 0; // adjacent reds → max penalty (should be caught by constraint)
+      totalDist += d;
       pairs++;
     }
   }
-  // Max distance on a 19-tile board ≈ 4; use 4 as the 100-point target.
-  return Math.max(0, Math.min(100, (totalDist / pairs / 4) * 100));
+  const avgDist = totalDist / pairs;
+  // Ideal: reds are spread across opposite sides of the board (avg dist 3-4+).
+  // Map 2→20, 3→55, 4→90, 5+→100
+  return Math.max(0, Math.min(100, (avgDist - 2) * 35 + 20));
 }
 
 function scoreDesertPlacement(tiles: Tile[], coordList: HexCoord[]): number {
-  const deserts: HexCoord[] = [];
-  for (let i = 0; i < tiles.length; i++) {
-    if (tiles[i].resource === R.DESERT) deserts.push(coordList[i]);
-  }
+  const deserts: HexCoord[] = tiles.filter(t => t.resource === R.DESERT).map(t => t.coord);
+  void coordList; // kept in signature for API compatibility
   if (deserts.length === 0) return 100;
   const avgDist = deserts.reduce((s, h) => s + hexDist(h, { q: 0, r: 0 }), 0) / deserts.length;
   return Math.max(0, Math.min(100, (avgDist / 3) * 100));
@@ -245,10 +295,11 @@ function computeCIBI(
 ): CIBIScore {
   const s1 = scorePipBalance(tiles);
   const s2 = scoreIntersectionQuality(tiles, coordList, coordIndex);
-  const s3 = scoreResourceClustering(tiles, coordList);
-  const s4 = scoreRedNumberSpread(tiles, coordList);
+  const s3 = scoreResourceClustering(tiles);
+  const s4 = scoreRedNumberSpread(tiles);
   const s5 = scoreDesertPlacement(tiles, coordList);
-  const total = s1 * 0.30 + s2 * 0.30 + s3 * 0.20 + s4 * 0.10 + s5 * 0.10;
+  // Weights: pip balance 25%, intersection 30%, resource spread 25%, red spread 15%, desert 5%
+  const total = s1 * 0.25 + s2 * 0.30 + s3 * 0.25 + s4 * 0.15 + s5 * 0.05;
   return {
     total: Math.round(total),
     pipBalance: Math.round(s1),
@@ -267,8 +318,7 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
     coordIndex[`${coordList[i].q},${coordList[i].r}`] = i;
   }
   const tilePool = buildTileList(TILE_COUNTS[mode]);
-  const numberPool = buildNumberList(mode);
-  const MAX_ATTEMPTS = 2000;
+  const MAX_ATTEMPTS = 3000;
   let bestBoard: Board | null = null;
   let bestScore = -1;
   let attempts = 0;
@@ -281,36 +331,31 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
       number: null,
       coord: coordList[i],
     }));
-    if (!checkNoAdjacentSameResource(tilesSoFar, coordList, coordIndex)) continue;
-    const nonDesertIndices = tilesSoFar
-      .map((t, i) => (t.resource !== R.DESERT ? i : null))
-      .filter((i): i is number => i !== null);
-    const numbers = shuffle(numberPool);
-    if (nonDesertIndices.length !== numbers.length) continue;
-    for (let k = 0; k < nonDesertIndices.length; k++) {
-      tilesSoFar[nonDesertIndices[k]].number = numbers[k];
-    }
-    if (!checkNoAdjacentReds(tilesSoFar, coordList, coordIndex)) continue;
-    if (!checkNoAdjacentSameNumber(tilesSoFar, coordList, coordIndex)) continue;
+    if (!checkNoAdjacentSameResource(tilesSoFar, coordIndex)) continue;
+    // Balanced assignment: distribute good numbers (6,8,5,9) across all resource types
+    if (!assignNumbersBalanced(tilesSoFar, mode)) continue;
+    if (!checkNoAdjacentReds(tilesSoFar, coordIndex)) continue;
+    if (!checkNoAdjacentSameNumber(tilesSoFar, coordIndex)) continue;
     const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
     if (cibi.total > bestScore) {
       bestScore = cibi.total;
-      bestBoard = { tiles: tilesSoFar, coordList, coordIndex, cibi, attempts };
+      // Deep-copy tiles so mutations in next iteration don't affect stored board
+      bestBoard = {
+        tiles: tilesSoFar.map(t => ({ ...t })),
+        coordList, coordIndex, cibi, attempts,
+      };
     }
   }
 
   if (!bestBoard) {
+    // Fallback: unconstrained board (rare; only if all 3000 attempts failed constraints)
     const resources = shuffle(tilePool);
     const tiles: Tile[] = resources.map((res, i) => ({
       resource: res as Tile['resource'],
       number: null,
       coord: coordList[i],
     }));
-    const nonDesert = tiles.map((t, i) => (t.resource !== R.DESERT ? i : null)).filter((i): i is number => i !== null);
-    const numbers = shuffle(numberPool);
-    for (let k = 0; k < Math.min(nonDesert.length, numbers.length); k++) {
-      tiles[nonDesert[k]].number = numbers[k];
-    }
+    assignNumbersBalanced(tiles, mode);
     const cibi = computeCIBI(tiles, coordList, coordIndex);
     bestBoard = { tiles, coordList, coordIndex, cibi, attempts: MAX_ATTEMPTS };
   }
