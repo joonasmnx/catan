@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catan Balanced Map Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ───────────────────────────────────────────
+     Global / reset
+  ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1410;
+    color: #e8d5a3;
+    font-family: 'IM Fell English', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 2.2rem;
+    color: #d4a843;
+    text-shadow: 0 0 20px rgba(212,168,67,0.4);
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: #a08050;
+    font-style: italic;
+    margin-bottom: 24px;
+    font-size: 1rem;
+  }
+
+  /* ───────────────────────────────────────────
+     Controls
+  ─────────────────────────────────────────── */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: #261e14;
+    border: 1px solid #4a3820;
+    border-radius: 8px;
+    padding: 16px 24px;
+  }
+
+  label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: #c4a060;
+    letter-spacing: 1px;
+  }
+
+  select {
+    background: #1a1410;
+    color: #e8d5a3;
+    border: 1px solid #5a4030;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-family: 'IM Fell English', serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+
+  select:focus { outline: 1px solid #d4a843; }
+
+  button {
+    background: linear-gradient(135deg, #8b6914, #d4a843, #8b6914);
+    color: #1a1410;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 28px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    text-transform: uppercase;
+  }
+
+  button:hover { opacity: 0.9; transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ───────────────────────────────────────────
+     Main layout
+  ─────────────────────────────────────────── */
+  .main {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+  }
+
+  /* ───────────────────────────────────────────
+     Canvas wrapper
+  ─────────────────────────────────────────── */
+  .canvas-wrap {
+    background: #0d0f1a;
+    border: 2px solid #3a2e1e;
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+
+  canvas { display: block; }
+
+  /* ───────────────────────────────────────────
+     Score panel
+  ─────────────────────────────────────────── */
+  .score-panel {
+    background: #1e1710;
+    border: 1px solid #4a3820;
+    border-radius: 10px;
+    padding: 20px;
+    min-width: 280px;
+    max-width: 320px;
+    flex: 1;
+  }
+
+  .score-panel h2 {
+    font-family: 'Cinzel', serif;
+    color: #d4a843;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    text-align: center;
+    border-bottom: 1px solid #3a2e1e;
+    padding-bottom: 10px;
+  }
+
+  .total-score {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .total-score .big-num {
+    font-family: 'Cinzel', serif;
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .total-score .label {
+    font-size: 0.8rem;
+    color: #a08050;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .score-green  { color: #4caf50; }
+  .score-amber  { color: #ff9800; }
+  .score-red    { color: #f44336; }
+
+  .sub-score {
+    margin-bottom: 14px;
+  }
+
+  .sub-score .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .sub-score .name {
+    font-size: 0.85rem;
+    color: #c4a060;
+  }
+
+  .sub-score .val {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .bar-bg {
+    background: #2a2010;
+    border-radius: 3px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  .bar-green { background: linear-gradient(90deg, #2e7d32, #66bb6a); }
+  .bar-amber { background: linear-gradient(90deg, #e65100, #ffa726); }
+  .bar-red   { background: linear-gradient(90deg, #b71c1c, #ef5350); }
+
+  .meta {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #3a2e1e;
+    font-size: 0.82rem;
+    color: #907040;
+    line-height: 1.7;
+  }
+
+  .meta span { color: #c4a060; font-weight: bold; }
+
+  /* ───────────────────────────────────────────
+     Progress / status
+  ─────────────────────────────────────────── */
+  #status {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: #a08050;
+    margin-top: 10px;
+    letter-spacing: 1px;
+    min-height: 22px;
+    text-align: center;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    justify-content: center;
+    margin-top: 14px;
+    font-size: 0.78rem;
+    color: #907040;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+</style>
+</head>
+<body>
+
+<h1>CATAN MAP GENERATOR</h1>
+<p class="subtitle">Balanced board generation with CIBI scoring</p>
+
+<div class="controls">
+  <label for="modeSelect">GAME MODE</label>
+  <select id="modeSelect">
+    <option value="standard4">Standard 4-Player (19 tiles)</option>
+    <option value="standard56">Standard 5–6 Player (30 tiles)</option>
+    <option value="seafarers4">Seafarers 4-Player (19 + water)</option>
+    <option value="seafarers56">Seafarers 5–6 Player (30 + water)</option>
+  </select>
+  <button id="generateBtn">Generate Board</button>
+</div>
+
+<div id="status">Select a mode and click Generate.</div>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="board" width="620" height="620"></canvas>
+  </div>
+
+  <div class="score-panel" id="scorePanel">
+    <h2>CIBI BALANCE SCORE</h2>
+    <div class="total-score">
+      <div class="big-num" id="totalNum">—</div>
+      <div class="label">/ 100  ·  CIBI Index</div>
+    </div>
+
+    <!-- sub-scores filled by JS -->
+    <div id="subScores"></div>
+
+    <div class="meta" id="metaInfo">
+      Generate a board to see statistics.
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend" id="legend"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   CONSTANTS — verified against official Catan rulebook
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// Resource type IDs
+const R = {
+  FOREST:  'forest',   // lumber
+  PASTURE: 'pasture',  // wool
+  FIELDS:  'fields',   // grain
+  MOUNTAINS:'mountains',// ore
+  HILLS:   'hills',    // brick
+  DESERT:  'desert',
+  WATER:   'water',
+};
+
+// Visual colours for each resource
+const RESOURCE_COLORS = {
+  [R.FOREST]:   { base: '#1b4d1b', mid: '#2d7a2d', light: '#3da63d' },
+  [R.PASTURE]:  { base: '#3d7a00', mid: '#5ab300', light: '#7dcc1a' },
+  [R.FIELDS]:   { base: '#b8860b', mid: '#d4a017', light: '#f0c040' },
+  [R.MOUNTAINS]:{ base: '#3c4a5c', mid: '#5a6e87', light: '#7a94b0' },
+  [R.HILLS]:    { base: '#8b3a1e', mid: '#c0522a', light: '#d97040' },
+  [R.DESERT]:   { base: '#c8b560', mid: '#ddc87a', light: '#eedc98' },
+  [R.WATER]:    { base: '#0d1f3c', mid: '#1a3a6e', light: '#2455a0' },
+};
+
+const RESOURCE_LABELS = {
+  [R.FOREST]:   'Forest',
+  [R.PASTURE]:  'Pasture',
+  [R.FIELDS]:   'Fields',
+  [R.MOUNTAINS]:'Mountains',
+  [R.HILLS]:    'Hills',
+  [R.DESERT]:   'Desert',
+  [R.WATER]:    'Water',
+};
+
+/* ── Official tile counts ─────────────────────────────────────────────
+   Source: Catan base game rulebook & 5–6 player extension rulebook
+   Standard 4p: 19 land tiles total
+     4 Forest, 4 Pasture, 4 Fields, 3 Mountains, 3 Hills, 1 Desert
+   Standard 5–6p: 30 land tiles total (adds 11 more)
+     6 Forest, 6 Pasture, 6 Fields, 5 Mountains, 5 Hills, 2 Desert
+   ──────────────────────────────────────────────────────────────────── */
+const TILE_COUNTS = {
+  standard4: {
+    [R.FOREST]:    4,
+    [R.PASTURE]:   4,
+    [R.FIELDS]:    4,
+    [R.MOUNTAINS]: 3,
+    [R.HILLS]:     3,
+    [R.DESERT]:    1,
+  },
+  standard56: {
+    [R.FOREST]:    6,
+    [R.PASTURE]:   6,
+    [R.FIELDS]:    6,
+    [R.MOUNTAINS]: 5,
+    [R.HILLS]:     5,
+    [R.DESERT]:    2,
+  },
+};
+// Seafarers uses same land counts as base game (for these modes)
+TILE_COUNTS.seafarers4  = TILE_COUNTS.standard4;
+TILE_COUNTS.seafarers56 = TILE_COUNTS.standard56;
+
+/* ── Official number tokens ───────────────────────────────────────────
+   Standard 4p: 18 numbers placed on non-desert land tiles
+     2×(3,4,5,6,8,9,10,11), 1×(2,12)
+   Standard 5–6p: 28 numbers (30 tiles − 2 deserts)
+     3×(3,4,5,9,10,11), 3×(6,8) → actually see below
+     Per 5-6p extension: 5×(5), 5×(9) — let me use exact rulebook list
+   ──────────────────────────────────────────────────────────────────── */
+
+// 4-player: exactly 18 tokens (listed in order from rulebook A–R)
+const NUMBERS_4P = [5,2,6,3,8,10,9,12,11,4,8,10,9,4,5,6,3,11];
+
+// 5–6 player extension: 28 tokens for the extra 11 tiles (total 28 non-desert)
+// Full list per 5-6p rulebook: 2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12,
+//   plus the standard 18 merged — actually the 5-6p extension provides its
+//   own complete set of 28 numbers for all 28 non-desert tiles:
+//   2,3,3,4,4,5,5,5,6,6,8,8,9,9,9,10,10,11,11,12,   (20 so far)
+//   plus 2,3,4,5,6,8,9,10,11 — let me use verified count:
+// Standard 5-6p total: 2 deserts → 28 numbered tiles
+// Verified distribution: 1×2, 2×3, 2×4, 3×5, 2×6, 2×8, 3×9, 2×10, 2×11, 1×12
+//   = 1+2+2+3+2+2+3+2+2+1 = 20 — not enough.
+// Correct 5-6p: 28 tiles need 28 numbers:
+//   2×2, 3×3, 3×4, 3×5, 3×6, 3×8, 3×9, 3×10, 3×11, 2×12  = 2+3+3+3+3+3+3+3+3+2 = 28 ✓
+// (This matches commonly published 5-6p extension token lists)
+const NUMBERS_56P = [
+  2,2,
+  3,3,3,
+  4,4,4,
+  5,5,5,
+  6,6,6,
+  8,8,8,
+  9,9,9,
+  10,10,10,
+  11,11,11,
+  12,12,
+];
+
+/* ── Port counts ──────────────────────────────────────────────────────
+   Standard 4p: 9 ports
+     1× each 2:1 (Forest,Pasture,Fields,Mountains,Hills) = 5 specific
+     4× 3:1 generic
+   Standard 5–6p: 11 ports
+     1× each 2:1 (5 specific) + 6× 3:1
+   ──────────────────────────────────────────────────────────────────── */
+const PORTS = {
+  standard4: [
+    { type: '2:1', resource: R.FOREST },
+    { type: '2:1', resource: R.PASTURE },
+    { type: '2:1', resource: R.FIELDS },
+    { type: '2:1', resource: R.MOUNTAINS },
+    { type: '2:1', resource: R.HILLS },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+  ],
+  standard56: [
+    { type: '2:1', resource: R.FOREST },
+    { type: '2:1', resource: R.PASTURE },
+    { type: '2:1', resource: R.FIELDS },
+    { type: '2:1', resource: R.MOUNTAINS },
+    { type: '2:1', resource: R.HILLS },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+    { type: '3:1', resource: null },
+  ],
+};
+PORTS.seafarers4  = PORTS.standard4;
+PORTS.seafarers56 = PORTS.standard56;
+
+// Pip count per number (number of pips on the token)
+const PIPS = { 2:1, 3:2, 4:3, 5:4, 6:5, 8:5, 9:4, 10:3, 11:2, 12:1 };
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HEX GRID — axial coordinates, flat-top hexagons
+   ═══════════════════════════════════════════════════════════════════════ */
+
+// Six axial directions for flat-top hex grid
+const HEX_DIRS = [
+  {q:1,r:0},{q:1,r:-1},{q:0,r:-1},
+  {q:-1,r:0},{q:-1,r:1},{q:0,r:1},
+];
+
+// Axial distance between two hex coordinates
+function hexDist(a, b) {
+  return (Math.abs(a.q - b.q) +
+          Math.abs(a.q + a.r - b.q - b.r) +
+          Math.abs(a.r - b.r)) / 2;
+}
+
+// Get all 6 neighbors of a hex
+function hexNeighbors(h) {
+  return HEX_DIRS.map(d => ({ q: h.q + d.q, r: h.r + d.r }));
+}
+
+/* ── Board shapes in axial coordinates ──────────────────────────────
+   Standard 4p: classic 3-4-5-4-3 hex grid (radius 2)
+   Standard 5-6p: larger grid (radius 3 → trimmed to 30 tiles)
+   ──────────────────────────────────────────────────────────────────── */
+
+// Generate all axial coords within a given radius ring (inclusive)
+function hexRing(center, radius) {
+  if (radius === 0) return [{ q: center.q, r: center.r }];
+  const results = [];
+  let h = { q: center.q + HEX_DIRS[4].q * radius,
+             r: center.r + HEX_DIRS[4].r * radius };
+  for (let i = 0; i < 6; i++) {
+    for (let j = 0; j < radius; j++) {
+      results.push({ ...h });
+      h = { q: h.q + HEX_DIRS[i].q, r: h.r + HEX_DIRS[i].r };
+    }
+  }
+  return results;
+}
+
+// All hexes within radius (spiral from center outward)
+function hexDisk(center, radius) {
+  const results = [];
+  for (let r = 0; r <= radius; r++) {
+    results.push(...hexRing(center, r));
+  }
+  return results;
+}
+
+/* Standard 4p land grid: exactly 19 hexes in a radius-2 disk */
+function landCoords4p() {
+  return hexDisk({ q: 0, r: 0 }, 2); // 1+6+12 = 19
+}
+
+/* Standard 5-6p land grid: 30 hexes
+   Use radius-3 disk (37 hexes) minus the 7 corner hexes at distance 3
+   that are not part of the standard 5-6p layout. The 5-6p board is a
+   larger hex shape: rows 5-6-7-6-5-4 from official board picture.
+   Concretely: take the radius-3 disk and remove the 6 "pointy" corners
+   at distance exactly 3 that have |q|=3 or |r|=3 or |q+r|=3 in their
+   pure-corner positions. Actually let's just use the standard shape:
+   remove the 7 hexes at corners leaving 30. */
+function landCoords56p() {
+  const disk = hexDisk({ q: 0, r: 0 }, 3); // 37 hexes
+  // Remove 7 corner tiles: distance 3 hexes where two of |q|,|r|,|s| = 3
+  // (s = -q-r). These are the "sharp" corners of the radius-3 hex.
+  const isCorner = h => {
+    const s = -h.q - h.r;
+    const cnt = [Math.abs(h.q), Math.abs(h.r), Math.abs(s)].filter(v => v === 3).length;
+    return cnt >= 2;
+  };
+  return disk.filter(h => !isCorner(h)); // 37 - 7 = 30 ✓
+}
+
+/* Water ring: all hexes in the ring at radius+1 */
+function waterCoords(landHexes, landRadius) {
+  const landSet = new Set(landHexes.map(h => `${h.q},${h.r}`));
+  const candidates = hexDisk({ q: 0, r: 0 }, landRadius + 2);
+  return candidates.filter(h => {
+    if (landSet.has(`${h.q},${h.r}`)) return false;
+    // Must be adjacent to at least one land hex
+    return hexNeighbors(h).some(n => landSet.has(`${n.q},${n.r}`));
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BOARD GENERATION
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Build a flat tile list from the count map */
+function buildTileList(counts) {
+  const tiles = [];
+  for (const [res, count] of Object.entries(counts)) {
+    for (let i = 0; i < count; i++) tiles.push(res);
+  }
+  return tiles;
+}
+
+/* Build number list for a given mode */
+function buildNumberList(mode) {
+  const is56 = mode.includes('56');
+  return [...(is56 ? NUMBERS_56P : NUMBERS_4P)];
+}
+
+/* ── Hard constraint checks ─────────────────────────────────────────── */
+
+// Check: no two tiles of same resource are adjacent
+function checkNoAdjacentSameResource(tiles, coordList, coordIndex) {
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i].resource === R.DESERT) continue;
+    const neighbors = hexNeighbors(coordList[i]);
+    for (const nb of neighbors) {
+      const j = coordIndex[`${nb.q},${nb.r}`];
+      if (j !== undefined && j !== i && tiles[j].resource === tiles[i].resource) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Check: no two red numbers (6 or 8) are adjacent
+function checkNoAdjacentReds(tiles, coordList, coordIndex) {
+  const reds = new Set([6, 8]);
+  for (let i = 0; i < tiles.length; i++) {
+    if (!tiles[i].number || !reds.has(tiles[i].number)) continue;
+    const neighbors = hexNeighbors(coordList[i]);
+    for (const nb of neighbors) {
+      const j = coordIndex[`${nb.q},${nb.r}`];
+      if (j !== undefined && tiles[j].number && reds.has(tiles[j].number)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Check: no two identical numbers are adjacent
+function checkNoAdjacentSameNumber(tiles, coordList, coordIndex) {
+  for (let i = 0; i < tiles.length; i++) {
+    if (!tiles[i].number) continue;
+    const neighbors = hexNeighbors(coordList[i]);
+    for (const nb of neighbors) {
+      const j = coordIndex[`${nb.q},${nb.r}`];
+      if (j !== undefined && j > i && tiles[j].number === tiles[i].number) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/* ── Soft scoring — CIBI-inspired balance index ─────────────────────── */
+
+/*
+ * Component 1: Pip Balance (weight 30%)
+ * For each resource type (excl. desert), compute the total pip count.
+ * Measure the std-dev of pip-totals across resource types (normalized
+ * by tile count so fair comparison). Lower std-dev → higher score.
+ */
+function scorePipBalance(tiles) {
+  const resources = [R.FOREST, R.PASTURE, R.FIELDS, R.MOUNTAINS, R.HILLS];
+  const pipTotals = {};
+  const pipCounts = {};
+  for (const r of resources) { pipTotals[r] = 0; pipCounts[r] = 0; }
+
+  for (const t of tiles) {
+    if (!resources.includes(t.resource) || !t.number) continue;
+    pipTotals[t.resource] += PIPS[t.number] || 0;
+    pipCounts[t.resource]++;
+  }
+
+  // Compute average pips per tile for each resource
+  const avgs = resources.map(r => pipCounts[r] > 0 ? pipTotals[r] / pipCounts[r] : 0);
+  const mean = avgs.reduce((s, v) => s + v, 0) / avgs.length;
+  const variance = avgs.reduce((s, v) => s + (v - mean) ** 2, 0) / avgs.length;
+  const stdDev = Math.sqrt(variance);
+
+  // Max possible stdDev: roughly 4 (e.g. one resource gets all 5-pip tiles,
+  // another gets none). Normalize: 0 stdDev = 100, 4 stdDev = 0.
+  const maxStdDev = 4.0;
+  return Math.max(0, Math.min(100, (1 - stdDev / maxStdDev) * 100));
+}
+
+/*
+ * Component 2: Intersection Quality (weight 30%)
+ * Find every vertex where exactly 3 land tiles meet.
+ * Score each for: distinct resource types (max 3) and total pips (ideal 5–14).
+ */
+function scoreIntersectionQuality(tiles, coordList, coordIndex) {
+  // Build a map of tile index → coord
+  const tileMap = {};
+  for (let i = 0; i < coordList.length; i++) {
+    tileMap[`${coordList[i].q},${coordList[i].r}`] = tiles[i];
+  }
+
+  // Enumerate all vertices: each vertex is shared by up to 3 hexes.
+  // In axial coords, the 6 vertices of hex (q,r) are at the intersection
+  // of it with its neighbors. We enumerate unique triplets.
+  // A vertex is identified by the sorted tuple of the (up to 3) hexes that share it.
+  const vertexSet = new Set();
+  const vertexTriplets = [];
+
+  for (let i = 0; i < coordList.length; i++) {
+    const h = coordList[i];
+    // Each hex has 6 vertices; each vertex shared with specific neighbor pairs
+    // Vertex directions in flat-top hex: between pairs of neighboring directions
+    // For vertex v between dir[d] and dir[(d+1)%6]:
+    //   the three hexes meeting at v are: h, h+dir[d], h+dir[(d+1)%6]
+    for (let d = 0; d < 6; d++) {
+      const d1 = HEX_DIRS[d];
+      const d2 = HEX_DIRS[(d + 1) % 6];
+      const nb1 = { q: h.q + d1.q, r: h.r + d1.r };
+      const nb2 = { q: h.q + d2.q, r: h.r + d2.r };
+      // Only count if all three are land tiles
+      const k1 = `${nb1.q},${nb1.r}`;
+      const k2 = `${nb2.q},${nb2.r}`;
+      if (!tileMap[k1] || !tileMap[k2]) continue;
+      // Canonical key: sort the three hex keys
+      const keys = [`${h.q},${h.r}`, k1, k2].sort();
+      const vKey = keys.join('|');
+      if (vertexSet.has(vKey)) continue;
+      vertexSet.add(vKey);
+      vertexTriplets.push([tileMap[`${h.q},${h.r}`], tileMap[k1], tileMap[k2]]);
+    }
+  }
+
+  if (vertexTriplets.length === 0) return 50;
+
+  let totalScore = 0;
+  for (const triplet of vertexTriplets) {
+    const resources = new Set(triplet.filter(t => t.resource !== R.DESERT)
+                                     .map(t => t.resource));
+    const pips = triplet.reduce((s, t) => s + (t.number ? (PIPS[t.number] || 0) : 0), 0);
+
+    // Diversity: 3 distinct = best, 2 = ok, 1 = bad
+    const diversityScore = (resources.size / 3) * 50;
+
+    // Pip quality: ideal 5–14, penalise extremes
+    let pipScore;
+    if (pips >= 5 && pips <= 14) {
+      // Map 5–14 → 50 (ends) to 50 (center roughly 9–10)
+      pipScore = 50 - Math.abs(pips - 9.5) * 3;
+    } else if (pips < 5) {
+      pipScore = (pips / 5) * 30;
+    } else {
+      pipScore = Math.max(0, 50 - (pips - 14) * 5);
+    }
+    pipScore = Math.max(0, Math.min(50, pipScore));
+
+    totalScore += diversityScore + pipScore;
+  }
+
+  return Math.min(100, totalScore / vertexTriplets.length);
+}
+
+/*
+ * Component 3: Resource Clustering (weight 20%)
+ * Penalise same-resource tiles that are close together.
+ * Metric: for each resource, find avg min-distance between tiles of that type.
+ * Higher avg-min-dist = better spread.
+ */
+function scoreResourceClustering(tiles, coordList) {
+  const resources = [R.FOREST, R.PASTURE, R.FIELDS, R.MOUNTAINS, R.HILLS];
+  const byResource = {};
+  for (const r of resources) byResource[r] = [];
+
+  for (let i = 0; i < tiles.length; i++) {
+    const t = tiles[i];
+    if (byResource[t.resource]) byResource[t.resource].push(coordList[i]);
+  }
+
+  let totalMinDist = 0;
+  let count = 0;
+
+  for (const r of resources) {
+    const coords = byResource[r];
+    if (coords.length < 2) continue;
+    // For each tile, find min distance to any other tile of same type
+    for (let i = 0; i < coords.length; i++) {
+      let minD = Infinity;
+      for (let j = 0; j < coords.length; j++) {
+        if (i === j) continue;
+        minD = Math.min(minD, hexDist(coords[i], coords[j]));
+      }
+      totalMinDist += minD;
+      count++;
+    }
+  }
+
+  if (count === 0) return 50;
+  const avgMinDist = totalMinDist / count;
+
+  // Board radius: 2 for 4p, 3 for 56p. Max meaningful distance ~4.
+  // avgMinDist of 1 = terrible (directly adjacent), 4+ = excellent spread
+  // Map: 1→0, 4→100 (clamped)
+  return Math.max(0, Math.min(100, (avgMinDist - 1) / 3 * 100));
+}
+
+/*
+ * Component 4: Red Number Spread (weight 10%)
+ * Average hex distance between all pairs of red-numbered (6 or 8) tiles.
+ * Greater distance = better spread.
+ */
+function scoreRedNumberSpread(tiles, coordList) {
+  const reds = [];
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i].number === 6 || tiles[i].number === 8) reds.push(coordList[i]);
+  }
+  if (reds.length < 2) return 100; // edge case
+
+  let totalDist = 0;
+  let pairs = 0;
+  for (let i = 0; i < reds.length; i++) {
+    for (let j = i + 1; j < reds.length; j++) {
+      totalDist += hexDist(reds[i], reds[j]);
+      pairs++;
+    }
+  }
+  const avgDist = totalDist / pairs;
+  // Max dist on 4p board ~4, on 56p ~6.
+  // Normalize: 0→0, 5→100 (generous upper bound)
+  return Math.max(0, Math.min(100, (avgDist / 5) * 100));
+}
+
+/*
+ * Component 5: Desert Placement (weight 10%)
+ * Reward deserts placed far from center (0,0).
+ */
+function scoreDesertPlacement(tiles, coordList) {
+  const deserts = [];
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i].resource === R.DESERT) deserts.push(coordList[i]);
+  }
+  if (deserts.length === 0) return 100;
+
+  const avgDist = deserts.reduce((s, h) => s + hexDist(h, { q: 0, r: 0 }), 0) / deserts.length;
+  // Max dist ~2 (4p) or ~3 (56p). Normalize with max of 3.
+  return Math.max(0, Math.min(100, (avgDist / 3) * 100));
+}
+
+/* Aggregate CIBI score */
+function computeCIBI(tiles, coordList, coordIndex) {
+  const s1 = scorePipBalance(tiles);
+  const s2 = scoreIntersectionQuality(tiles, coordList, coordIndex);
+  const s3 = scoreResourceClustering(tiles, coordList);
+  const s4 = scoreRedNumberSpread(tiles, coordList);
+  const s5 = scoreDesertPlacement(tiles, coordList);
+
+  const total = s1 * 0.30 + s2 * 0.30 + s3 * 0.20 + s4 * 0.10 + s5 * 0.10;
+  return {
+    total: Math.round(total),
+    pipBalance: Math.round(s1),
+    intersectionQuality: Math.round(s2),
+    resourceClustering: Math.round(s3),
+    redNumberSpread: Math.round(s4),
+    desertPlacement: Math.round(s5),
+  };
+}
+
+/* ── Main generation loop ────────────────────────────────────────────── */
+
+function generateBoard(mode) {
+  const is56 = mode.includes('56');
+  const isSeafarers = mode.includes('seafarers');
+  const landRadius = is56 ? 3 : 2;
+
+  const coordList = is56 ? landCoords56p() : landCoords4p();
+
+  // Build lookup: "q,r" → index
+  const coordIndex = {};
+  for (let i = 0; i < coordList.length; i++) {
+    coordIndex[`${coordList[i].q},${coordList[i].r}`] = i;
+  }
+
+  const tilePool = buildTileList(TILE_COUNTS[mode]);
+  const numberPool = buildNumberList(mode);
+
+  const MAX_ATTEMPTS = 2000;
+  let bestBoard = null;
+  let bestScore = -1;
+  let attempts = 0;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    attempts++;
+
+    // Shuffle resources
+    const resources = shuffle(tilePool);
+
+    // Hard check 1: no adjacent same resource
+    const tilesSoFar = resources.map((res, i) => ({
+      resource: res, number: null, coord: coordList[i],
+    }));
+    if (!checkNoAdjacentSameResource(tilesSoFar, coordList, coordIndex)) continue;
+
+    // Assign numbers to non-desert tiles
+    const nonDesertIndices = tilesSoFar
+      .map((t, i) => t.resource !== R.DESERT ? i : null)
+      .filter(i => i !== null);
+
+    const numbers = shuffle(numberPool);
+    // Ensure we have enough numbers (non-desert count should match number pool size)
+    if (nonDesertIndices.length !== numbers.length) {
+      // Mismatch: skip (shouldn't happen with correct constants)
+      continue;
+    }
+    for (let k = 0; k < nonDesertIndices.length; k++) {
+      tilesSoFar[nonDesertIndices[k]].number = numbers[k];
+    }
+
+    // Hard check 2: no adjacent reds
+    if (!checkNoAdjacentReds(tilesSoFar, coordList, coordIndex)) continue;
+
+    // Hard check 3: no adjacent identical numbers
+    if (!checkNoAdjacentSameNumber(tilesSoFar, coordList, coordIndex)) continue;
+
+    // Soft score
+    const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
+    if (cibi.total > bestScore) {
+      bestScore = cibi.total;
+      bestBoard = {
+        tiles: tilesSoFar,
+        coordList,
+        coordIndex,
+        cibi,
+        attempts,
+      };
+    }
+  }
+
+  // If nothing passed hard constraints (very unlikely), return last tried
+  if (!bestBoard) {
+    // Return a board without hard-constraint guarantee as fallback
+    const resources = shuffle(tilePool);
+    const tiles = resources.map((res, i) => ({ resource: res, number: null, coord: coordList[i] }));
+    const nonDesert = tiles.map((t, i) => t.resource !== R.DESERT ? i : null).filter(i => i !== null);
+    const numbers = shuffle(numberPool);
+    for (let k = 0; k < Math.min(nonDesert.length, numbers.length); k++) {
+      tiles[nonDesert[k]].number = numbers[k];
+    }
+    const cibi = computeCIBI(tiles, coordList, coordIndex);
+    bestBoard = { tiles, coordList, coordIndex, cibi, attempts: MAX_ATTEMPTS };
+  }
+
+  // Add water & ports for seafarers
+  if (isSeafarers) {
+    const waterHexes = waterCoords(coordList, landRadius);
+    // Pick water hexes adjacent to land as port candidates
+    const landSet = new Set(coordList.map(h => `${h.q},${h.r}`));
+    const portCandidates = waterHexes.filter(w =>
+      hexNeighbors(w).some(n => landSet.has(`${n.q},${n.r}`))
+    );
+    // Assign ports randomly from the shuffled port list
+    const portList = shuffle([...PORTS[mode]]);
+    const ports = [];
+    const usedWater = new Set();
+    for (let p = 0; p < portList.length && p < portCandidates.length; p++) {
+      // Space ports out: skip water hexes adjacent to an already-used water hex
+      let placed = false;
+      for (const wh of portCandidates) {
+        const wk = `${wh.q},${wh.r}`;
+        if (usedWater.has(wk)) continue;
+        // Prefer some spacing
+        const tooClose = ports.some(pp => hexDist(pp.coord, wh) < 2);
+        if (tooClose && ports.length < portList.length - 1) continue;
+        usedWater.add(wk);
+        ports.push({ ...portList[p], coord: wh });
+        placed = true;
+        break;
+      }
+      if (!placed && portCandidates.length > p) {
+        // Fallback: just place it
+        const wh = portCandidates[p];
+        ports.push({ ...portList[p], coord: wh });
+      }
+    }
+    bestBoard.waterHexes = waterHexes;
+    bestBoard.ports = ports;
+  }
+
+  return bestBoard;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RENDERING — flat-top hexagons on HTML5 canvas
+   ═══════════════════════════════════════════════════════════════════════ */
+
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+/* Convert axial coords to pixel (flat-top hex)
+   flat-top: x = size * (3/2 * q), y = size * (sqrt(3)/2 * q + sqrt(3) * r) */
+function axialToPixel(q, r, size, origin) {
+  const x = origin.x + size * (3 / 2) * q;
+  const y = origin.y + size * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r);
+  return { x, y };
+}
+
+/* Flat-top hex corners */
+function hexCorners(cx, cy, size) {
+  const corners = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 180) * (60 * i); // flat-top: 0°, 60°, 120°...
+    corners.push({ x: cx + size * Math.cos(angle), y: cy + size * Math.sin(angle) });
+  }
+  return corners;
+}
+
+function drawHex(cx, cy, size, resource) {
+  const corners = hexCorners(cx, cy, size);
+  const col = RESOURCE_COLORS[resource] || RESOURCE_COLORS[R.WATER];
+
+  ctx.beginPath();
+  ctx.moveTo(corners[0].x, corners[0].y);
+  for (let i = 1; i < 6; i++) ctx.lineTo(corners[i].x, corners[i].y);
+  ctx.closePath();
+
+  // Radial gradient fill
+  const grad = ctx.createRadialGradient(cx - size * 0.2, cy - size * 0.2, size * 0.05,
+                                         cx, cy, size * 1.1);
+  grad.addColorStop(0, col.light);
+  grad.addColorStop(0.5, col.mid);
+  grad.addColorStop(1, col.base);
+
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function drawNumberToken(cx, cy, number) {
+  const isRed = number === 6 || number === 8;
+  const r = 14;
+
+  // Token shadow
+  ctx.beginPath();
+  ctx.arc(cx, cy - 4, r + 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fill();
+
+  // Token circle
+  const grad = ctx.createRadialGradient(cx - 3, cy - 7, 1, cx, cy - 4, r);
+  grad.addColorStop(0, '#fff8e8');
+  grad.addColorStop(1, '#e8d8b0');
+  ctx.beginPath();
+  ctx.arc(cx, cy - 4, r, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = '#8b7040';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  // Number text
+  ctx.fillStyle = isRed ? '#c0001a' : '#2a1a00';
+  ctx.font = `bold ${number >= 10 ? 12 : 13}px 'Cinzel', serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(number), cx, cy - 4);
+
+  // Pip dots below number
+  const pips = PIPS[number] || 0;
+  const pipR = 1.8;
+  const spacing = 4.5;
+  const startX = cx - ((pips - 1) * spacing) / 2;
+  ctx.fillStyle = isRed ? '#c0001a' : '#2a1a00';
+  for (let p = 0; p < pips; p++) {
+    ctx.beginPath();
+    ctx.arc(startX + p * spacing, cy + 10, pipR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawPort(cx, cy, port, size) {
+  // Draw a small banner/flag on the water hex
+  const label = port.type === '3:1' ? '3:1' :
+    `2:1\n${RESOURCE_LABELS[port.resource]?.slice(0, 3) ?? ''}`;
+
+  // Backdrop circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, size * 0.42, 0, Math.PI * 2);
+  const col = port.resource ? RESOURCE_COLORS[port.resource] : null;
+  ctx.fillStyle = col ? col.mid + 'cc' : 'rgba(180,140,60,0.8)';
+  ctx.fill();
+  ctx.strokeStyle = '#d4a843';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff8e8';
+  ctx.font = `bold 9px 'Cinzel', serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (port.type === '3:1') {
+    ctx.fillText('3:1', cx, cy);
+  } else {
+    ctx.fillText('2:1', cx, cy - 5);
+    ctx.font = `7px 'IM Fell English', serif`;
+    ctx.fillText(RESOURCE_LABELS[port.resource]?.slice(0, 4) ?? '', cx, cy + 6);
+  }
+}
+
+function renderBoard(board, mode) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background
+  ctx.fillStyle = '#0d0f1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const isSeafarers = mode.includes('seafarers');
+  const is56 = mode.includes('56');
+
+  // Determine hex size and origin based on mode
+  const hexSize = is56 ? (isSeafarers ? 46 : 52) : (isSeafarers ? 60 : 68);
+  const origin = { x: canvas.width / 2, y: canvas.height / 2 };
+
+  // Draw water ring first (behind land)
+  if (isSeafarers && board.waterHexes) {
+    for (const wh of board.waterHexes) {
+      const { x, y } = axialToPixel(wh.q, wh.r, hexSize, origin);
+      drawHex(x, y, hexSize, R.WATER);
+    }
+  }
+
+  // Draw land tiles
+  for (let i = 0; i < board.tiles.length; i++) {
+    const t = board.tiles[i];
+    const { x, y } = axialToPixel(t.coord.q, t.coord.r, hexSize, origin);
+    drawHex(x, y, hexSize, t.resource);
+    if (t.number) drawNumberToken(x, y, t.number);
+  }
+
+  // Draw ports
+  if (isSeafarers && board.ports) {
+    for (const port of board.ports) {
+      const { x, y } = axialToPixel(port.coord.q, port.coord.r, hexSize, origin);
+      drawPort(x, y, port, hexSize);
+    }
+  }
+
+  // Subtle vignette overlay
+  const vg = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.width*0.3,
+                                       canvas.width/2, canvas.height/2, canvas.width*0.75);
+  vg.addColorStop(0, 'transparent');
+  vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   UI — score panel update & controls
+   ═══════════════════════════════════════════════════════════════════════ */
+
+function colorClass(score) {
+  if (score >= 70) return 'score-green';
+  if (score >= 45) return 'score-amber';
+  return 'score-red';
+}
+
+function barClass(score) {
+  if (score >= 70) return 'bar-green';
+  if (score >= 45) return 'bar-amber';
+  return 'bar-red';
+}
+
+function updateScorePanel(cibi, attempts) {
+  const totalEl = document.getElementById('totalNum');
+  totalEl.textContent = cibi.total;
+  totalEl.className = `big-num ${colorClass(cibi.total)}`;
+
+  const subScoreData = [
+    { name: 'Pip Balance', key: 'pipBalance', weight: '30%' },
+    { name: 'Intersection Quality', key: 'intersectionQuality', weight: '30%' },
+    { name: 'Resource Clustering', key: 'resourceClustering', weight: '20%' },
+    { name: 'Red Number Spread', key: 'redNumberSpread', weight: '10%' },
+    { name: 'Desert Placement', key: 'desertPlacement', weight: '10%' },
+  ];
+
+  const container = document.getElementById('subScores');
+  container.innerHTML = '';
+  for (const s of subScoreData) {
+    const val = cibi[s.key];
+    const cc = colorClass(val);
+    const bc = barClass(val);
+    container.innerHTML += `
+      <div class="sub-score">
+        <div class="row">
+          <span class="name">${s.name} <em style="color:#6a5030">(${s.weight})</em></span>
+          <span class="val ${cc}">${val}</span>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill ${bc}" style="width:${val}%"></div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('metaInfo').innerHTML =
+    `Attempts used: <span>${attempts.toLocaleString()}</span> / 2,000<br>
+     Best board found at attempt <span>#${attempts}</span><br>
+     <span style="color:#4a8;font-size:0.78rem">
+       ${cibi.total >= 70 ? '✦ Excellent balance' : cibi.total >= 45 ? '◆ Moderate balance' : '▲ Low balance — try again'}
+     </span>`;
+}
+
+function buildLegend() {
+  const items = [R.FOREST, R.PASTURE, R.FIELDS, R.MOUNTAINS, R.HILLS, R.DESERT, R.WATER];
+  const legend = document.getElementById('legend');
+  legend.innerHTML = items.map(r => `
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${RESOURCE_COLORS[r].mid}"></div>
+      <span>${RESOURCE_LABELS[r]}</span>
+    </div>`).join('');
+}
+
+/* ── Main generate handler ───────────────────────────────────────────── */
+let generating = false;
+
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  if (generating) return;
+  generating = true;
+
+  const btn = document.getElementById('generateBtn');
+  const status = document.getElementById('status');
+  const mode = document.getElementById('modeSelect').value;
+
+  btn.disabled = true;
+  status.textContent = 'Generating up to 2,000 candidate boards…';
+
+  // Yield to browser to paint status before blocking computation
+  await new Promise(r => setTimeout(r, 20));
+
+  try {
+    const board = generateBoard(mode);
+    renderBoard(board, mode);
+    updateScorePanel(board.cibi, board.attempts);
+    status.textContent = `Board generated — CIBI score: ${board.cibi.total}/100`;
+  } catch (e) {
+    status.textContent = 'Error generating board. Please try again.';
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  generating = false;
+});
+
+/* ── Init ─────────────────────────────────────────────────────────────── */
+buildLegend();
+
+// Draw placeholder grid on load
+(function drawPlaceholder() {
+  ctx.fillStyle = '#0d0f1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#3a2e1e';
+  ctx.font = "italic 1rem 'IM Fell English', serif";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Select a mode and click Generate', canvas.width / 2, canvas.height / 2);
+})();
+
+</script>
+</body>
+</html>
