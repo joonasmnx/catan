@@ -23,4 +23,74 @@ body {
   color: #e8d5a3;
   font-family: 'IM Fell English', Georgia, serif;
   min-height: 100vh;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
+}
+
+/* ── Responsive board canvas ─────────────────────────────────────── */
+.board-canvas-wrap {
+  width: 100%;
+  max-width: 744px;
+  flex-shrink: 0;
+}
+
+.board-canvas {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 1 / 1;
+  border-radius: 4px;
+}
+
+/* ── Touch-friendly controls ─────────────────────────────────────── */
+.controls-select {
+  min-height: 44px;
+  font-size: 1rem !important;
+  width: 100%;
+}
+
+.controls-btn {
+  min-height: 44px;
+  width: 100%;
+}
+
+/* ── Score panel responsive ──────────────────────────────────────── */
+.score-panel {
+  min-width: 290px;
+  max-width: 340px;
+  flex: 1;
+}
+
+/* ── Mobile overrides ────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .page-outer {
+    padding: 20px 12px 40px !important;
+  }
+
+  .controls-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 14px 16px !important;
+    gap: 10px !important;
+  }
+
+  .controls-label {
+    text-align: left;
+  }
+
+  .score-panel {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .main-content {
+    gap: 16px !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .board-canvas-wrap {
+    max-width: 100%;
+  }
 }

@@ -92,14 +92,11 @@ export default function ScorePanel({ cibi, attempts, mode, layout }: Props) {
   const layoutLabel = layout === 'classic' ? 'Classic Island' : layout === 'archipelago' ? 'Archipelago' : 'Twin Islands';
 
   return (
-    <div style={{
+    <div className="score-panel" style={{
       background: 'linear-gradient(170deg, #201a10 0%, #181410 100%)',
       border: '1px solid #4a3818',
       borderTop: '1px solid #6a5025',
       borderRadius: 12,
-      minWidth: 290,
-      maxWidth: 340,
-      flex: 1,
       overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
     }}>

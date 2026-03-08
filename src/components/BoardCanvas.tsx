@@ -17,20 +17,19 @@ export default function BoardCanvas({ board }: Props) {
   }, [board]);
 
   return (
-    <div style={{
+    <div className="board-canvas-wrap" style={{
       background: '#08090f',
       border: '1px solid #2a2218',
       borderTop: '1px solid #3e3020',
       borderRadius: 12,
       padding: 12,
       boxShadow: '0 8px 48px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.5)',
-      flexShrink: 0,
     }}>
       <canvas
         ref={canvasRef}
         width={720}
         height={720}
-        style={{ display: 'block', borderRadius: 4 }}
+        className="board-canvas"
       />
     </div>
   );
