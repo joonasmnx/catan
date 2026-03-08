@@ -13,246 +13,325 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: #1a1410;
+    background: #110e0a;
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(90,55,10,0.45) 0%, transparent 65%),
+      radial-gradient(ellipse at 50% 100%, rgba(20,10,5,0.6) 0%, transparent 60%);
     color: #e8d5a3;
     font-family: 'IM Fell English', serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
+    padding: 32px 20px 40px;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    text-align: center;
+    margin-bottom: 28px;
   }
 
   h1 {
     font-family: 'Cinzel', serif;
-    font-size: 2.2rem;
+    font-size: 2.6rem;
     color: #d4a843;
-    text-shadow: 0 0 20px rgba(212,168,67,0.4);
-    letter-spacing: 3px;
-    margin-bottom: 6px;
+    text-shadow: 0 2px 24px rgba(212,168,67,0.5), 0 0 60px rgba(212,168,67,0.15);
+    letter-spacing: 6px;
+    margin-bottom: 8px;
   }
 
   .subtitle {
-    color: #a08050;
+    color: #907040;
     font-style: italic;
-    margin-bottom: 24px;
     font-size: 1rem;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
   }
 
-  /* ───────────────────────────────────────────
-     Controls
-  ─────────────────────────────────────────── */
+  /* Ornamental divider */
+  .ornament {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 0;
+  }
+  .ornament::before, .ornament::after {
+    content: '';
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #5a3e1a, transparent);
+  }
+  .ornament-diamond {
+    width: 7px; height: 7px;
+    background: #d4a843;
+    transform: rotate(45deg);
+    box-shadow: 0 0 8px rgba(212,168,67,0.6);
+  }
+
+  /* ── Controls ── */
   .controls {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 14px;
     align-items: center;
     justify-content: center;
-    margin-bottom: 20px;
-    background: #261e14;
-    border: 1px solid #4a3820;
-    border-radius: 8px;
-    padding: 16px 24px;
+    margin-bottom: 18px;
+    background: linear-gradient(160deg, #2a2016 0%, #1e1810 100%);
+    border: 1px solid #5a4020;
+    border-top: 1px solid #7a5828;
+    border-radius: 10px;
+    padding: 18px 28px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,80,0.06);
   }
 
   label {
     font-family: 'Cinzel', serif;
-    font-size: 0.85rem;
-    color: #c4a060;
-    letter-spacing: 1px;
-  }
-
-  select {
-    background: #1a1410;
-    color: #e8d5a3;
-    border: 1px solid #5a4030;
-    border-radius: 4px;
-    padding: 8px 12px;
-    font-family: 'IM Fell English', serif;
-    font-size: 0.95rem;
-    cursor: pointer;
-  }
-
-  select:focus { outline: 1px solid #d4a843; }
-
-  button {
-    background: linear-gradient(135deg, #8b6914, #d4a843, #8b6914);
-    color: #1a1410;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 28px;
-    font-family: 'Cinzel', serif;
-    font-size: 0.95rem;
-    font-weight: 700;
+    font-size: 0.8rem;
+    color: #a07840;
     letter-spacing: 1.5px;
-    cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
     text-transform: uppercase;
   }
 
-  button:hover { opacity: 0.9; transform: translateY(-1px); }
-  button:active { transform: translateY(0); }
-  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  select {
+    background: #16110c;
+    color: #e8d5a3;
+    border: 1px solid #5a4030;
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-family: 'IM Fell English', serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    transition: border-color 0.2s;
+  }
+  select:focus { outline: none; border-color: #d4a843; }
+  select:hover  { border-color: #8a6030; }
 
-  /* ───────────────────────────────────────────
-     Main layout
-  ─────────────────────────────────────────── */
+  button {
+    background: linear-gradient(160deg, #c49828 0%, #e8c050 40%, #b08020 100%);
+    color: #1a1008;
+    border: none;
+    border-radius: 7px;
+    padding: 11px 32px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 2px 12px rgba(180,140,20,0.35), inset 0 1px 0 rgba(255,255,200,0.25);
+    transition: box-shadow 0.2s, transform 0.1s, filter 0.2s;
+  }
+  button:hover  { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 4px 18px rgba(180,140,20,0.5); }
+  button:active { transform: translateY(0); filter: brightness(0.95); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; filter: none; }
+
+  /* ── Main layout ── */
   .main {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 24px;
     justify-content: center;
     width: 100%;
-    max-width: 1200px;
+    max-width: 1220px;
   }
 
-  /* ───────────────────────────────────────────
-     Canvas wrapper
-  ─────────────────────────────────────────── */
+  /* ── Canvas wrapper ── */
   .canvas-wrap {
-    background: #0d0f1a;
-    border: 2px solid #3a2e1e;
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    background: #08090f;
+    border: 1px solid #2a2218;
+    border-top: 1px solid #3e3020;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 8px 48px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.5);
     flex-shrink: 0;
   }
+  canvas { display: block; border-radius: 4px; }
 
-  canvas { display: block; }
-
-  /* ───────────────────────────────────────────
-     Score panel
-  ─────────────────────────────────────────── */
+  /* ── Score panel ── */
   .score-panel {
-    background: #1e1710;
-    border: 1px solid #4a3820;
-    border-radius: 10px;
-    padding: 20px;
-    min-width: 280px;
-    max-width: 320px;
+    background: linear-gradient(170deg, #201a10 0%, #181410 100%);
+    border: 1px solid #4a3818;
+    border-top: 1px solid #6a5025;
+    border-radius: 12px;
+    padding: 0;
+    min-width: 290px;
+    max-width: 330px;
     flex: 1;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
   }
 
-  .score-panel h2 {
+  .score-panel-header {
+    background: linear-gradient(135deg, #2a1e08, #3a2a10, #2a1e08);
+    border-bottom: 1px solid #5a4018;
+    padding: 16px 20px 14px;
+    text-align: center;
+  }
+
+  .score-panel-header h2 {
     font-family: 'Cinzel', serif;
     color: #d4a843;
-    font-size: 1.1rem;
-    letter-spacing: 2px;
-    margin-bottom: 16px;
-    text-align: center;
-    border-bottom: 1px solid #3a2e1e;
-    padding-bottom: 10px;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .score-panel-body {
+    padding: 20px;
   }
 
   .total-score {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 6px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #2e2410;
   }
 
   .total-score .big-num {
     font-family: 'Cinzel', serif;
-    font-size: 3rem;
+    font-size: 3.6rem;
     font-weight: 700;
     line-height: 1;
+    text-shadow: 0 0 30px currentColor;
   }
 
   .total-score .label {
-    font-size: 0.8rem;
-    color: #a08050;
+    font-size: 0.72rem;
+    color: #7a6030;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 2.5px;
+    margin-top: 2px;
   }
 
-  .score-green  { color: #4caf50; }
-  .score-amber  { color: #ff9800; }
-  .score-red    { color: #f44336; }
-
-  .sub-score {
-    margin-bottom: 14px;
+  /* CIBI explanation box */
+  .cibi-explain {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid #2e2410;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 14px 0;
+    font-size: 0.78rem;
+    color: #907050;
+    line-height: 1.65;
   }
+  .cibi-explain strong { color: #b08840; }
+
+  .score-green  { color: #5ecf62; }
+  .score-amber  { color: #ffaa20; }
+  .score-red    { color: #f45050; }
+
+  .sub-score { margin-bottom: 16px; }
 
   .sub-score .row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
+    align-items: baseline;
+    margin-bottom: 5px;
   }
 
   .sub-score .name {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: #c4a060;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px;
+  }
+
+  .sub-score .weight-tag {
+    font-family: 'IM Fell English', serif;
+    font-size: 0.72rem;
+    color: #5a4020;
+    font-style: italic;
+    margin-left: 4px;
   }
 
   .sub-score .val {
     font-family: 'Cinzel', serif;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 700;
+    min-width: 28px;
+    text-align: right;
   }
 
   .bar-bg {
-    background: #2a2010;
-    border-radius: 3px;
-    height: 6px;
+    background: #1a1408;
+    border-radius: 4px;
+    height: 7px;
     overflow: hidden;
+    margin-bottom: 5px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
   }
 
   .bar-fill {
     height: 100%;
-    border-radius: 3px;
-    transition: width 0.6s ease;
+    border-radius: 4px;
+    transition: width 0.7s cubic-bezier(.4,0,.2,1);
   }
 
-  .bar-green { background: linear-gradient(90deg, #2e7d32, #66bb6a); }
-  .bar-amber { background: linear-gradient(90deg, #e65100, #ffa726); }
-  .bar-red   { background: linear-gradient(90deg, #b71c1c, #ef5350); }
+  .bar-green { background: linear-gradient(90deg, #1a5c1e, #5ecf62); box-shadow: 0 0 6px rgba(94,207,98,0.4); }
+  .bar-amber { background: linear-gradient(90deg, #8a4800, #ffaa20); box-shadow: 0 0 6px rgba(255,170,32,0.3); }
+  .bar-red   { background: linear-gradient(90deg, #7a1010, #f45050); box-shadow: 0 0 6px rgba(244,80,80,0.3); }
+
+  .sub-score .desc {
+    font-size: 0.73rem;
+    color: #5a4828;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .scores-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #3a2c14, transparent);
+    margin: 16px 0;
+  }
 
   .meta {
-    margin-top: 18px;
-    padding-top: 14px;
-    border-top: 1px solid #3a2e1e;
-    font-size: 0.82rem;
-    color: #907040;
-    line-height: 1.7;
+    font-size: 0.78rem;
+    color: #7a6030;
+    line-height: 1.75;
   }
+  .meta span { color: #b08840; font-weight: bold; }
 
-  .meta span { color: #c4a060; font-weight: bold; }
-
-  /* ───────────────────────────────────────────
-     Progress / status
-  ─────────────────────────────────────────── */
+  /* ── Status ── */
   #status {
     font-family: 'Cinzel', serif;
-    font-size: 0.85rem;
-    color: #a08050;
-    margin-top: 10px;
+    font-size: 0.82rem;
+    color: #907040;
+    margin-top: 8px;
+    margin-bottom: 4px;
     letter-spacing: 1px;
     min-height: 22px;
     text-align: center;
   }
 
-  /* Legend */
+  /* ── Legend ── */
   .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 16px;
+    gap: 6px 18px;
     justify-content: center;
-    margin-top: 14px;
-    font-size: 0.78rem;
-    color: #907040;
+    margin-top: 16px;
+    font-size: 0.76rem;
+    color: #7a6030;
   }
-
-  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-swatch {
-    width: 14px; height: 14px;
+    width: 13px; height: 13px;
     border-radius: 3px;
-    border: 1px solid rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
   }
 </style>
 </head>
 <body>
 
-<h1>CATAN MAP GENERATOR</h1>
-<p class="subtitle">Balanced board generation with CIBI scoring</p>
+<div class="site-header">
+  <h1>CATAN MAP GENERATOR</h1>
+  <p class="subtitle">Balanced board generation with CIBI scoring</p>
+  <div class="ornament"><div class="ornament-diamond"></div></div>
+</div>
 
 <div class="controls">
   <label for="modeSelect">GAME MODE</label>
@@ -279,17 +358,26 @@
   </div>
 
   <div class="score-panel" id="scorePanel">
-    <h2>CIBI BALANCE SCORE</h2>
-    <div class="total-score">
-      <div class="big-num" id="totalNum">—</div>
-      <div class="label">/ 100  ·  CIBI Index</div>
+    <div class="score-panel-header">
+      <h2>CIBI Balance Score</h2>
     </div>
+    <div class="score-panel-body">
+      <div class="total-score">
+        <div class="big-num" id="totalNum">—</div>
+        <div class="label">/ 100 · CIBI Index</div>
+      </div>
 
-    <!-- sub-scores filled by JS -->
-    <div id="subScores"></div>
+      <div class="cibi-explain">
+        <strong>CIBI</strong> (Catan Intersection Balance Index) measures how fair this board is for all players — from 0 to 100. It checks that resources are evenly productive, settlement spots are varied, and powerful numbers aren't clustered in one area. A higher score means a more balanced, less luck-dependent game.
+      </div>
 
-    <div class="meta" id="metaInfo">
-      Generate a board to see statistics.
+      <!-- sub-scores filled by JS -->
+      <div id="subScores"></div>
+
+      <div class="scores-divider"></div>
+      <div class="meta" id="metaInfo">
+        Generate a board to see statistics.
+      </div>
     </div>
   </div>
 </div>
@@ -1231,11 +1319,11 @@ function updateScorePanel(cibi, attempts) {
   totalEl.className = `big-num ${colorClass(cibi.total)}`;
 
   const subScoreData = [
-    { name: 'Pip Balance', key: 'pipBalance', weight: '30%' },
-    { name: 'Intersection Quality', key: 'intersectionQuality', weight: '30%' },
-    { name: 'Resource Clustering', key: 'resourceClustering', weight: '20%' },
-    { name: 'Red Number Spread', key: 'redNumberSpread', weight: '10%' },
-    { name: 'Desert Placement', key: 'desertPlacement', weight: '10%' },
+    { name: 'Pip Balance',          key: 'pipBalance',           weight: '30%', desc: 'All five resources get roughly equal dice probability — no single resource dominates production.' },
+    { name: 'Intersection Quality', key: 'intersectionQuality',  weight: '30%', desc: 'Every corner where 3 tiles meet has diverse resources and decent numbers — good spots to build settlements.' },
+    { name: 'Resource Clustering',  key: 'resourceClustering',   weight: '20%', desc: 'Same-type tiles are spread across the board, not bunched together — prevents one player from monopolising a resource.' },
+    { name: 'Red Number Spread',    key: 'redNumberSpread',      weight: '10%', desc: '6s and 8s (the most frequently rolled numbers) are placed far apart so every player can access high-production tiles.' },
+    { name: 'Desert Placement',     key: 'desertPlacement',      weight: '10%', desc: 'The desert produces nothing — ideally it sits near the edge rather than blocking prime settlement spots.' },
   ];
 
   const container = document.getElementById('subScores');
@@ -1247,12 +1335,13 @@ function updateScorePanel(cibi, attempts) {
     container.innerHTML += `
       <div class="sub-score">
         <div class="row">
-          <span class="name">${s.name} <em style="color:#6a5030">(${s.weight})</em></span>
+          <span class="name">${s.name}<span class="weight-tag">${s.weight}</span></span>
           <span class="val ${cc}">${val}</span>
         </div>
         <div class="bar-bg">
           <div class="bar-fill ${bc}" style="width:${val}%"></div>
         </div>
+        <div class="desc">${s.desc}</div>
       </div>`;
   }
 
