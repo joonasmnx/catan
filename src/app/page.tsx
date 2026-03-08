@@ -39,7 +39,7 @@ export default function Home() {
   };
 
   return (
-    <div style={{
+    <div className="page-outer" style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -91,7 +91,7 @@ export default function Home() {
       </header>
 
       {/* ── Controls ── */}
-      <div style={{
+      <div className="controls-row" style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: 14,
@@ -103,9 +103,11 @@ export default function Home() {
         borderTop: '1px solid #7a5828',
         borderRadius: 10,
         padding: '18px 28px',
+        width: '100%',
+        maxWidth: 900,
         boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,200,80,0.06)',
       }}>
-        <label style={{
+        <label className="controls-label" style={{
           fontFamily: "'Cinzel', serif",
           fontSize: '0.8rem',
           color: '#a07840',
@@ -117,6 +119,7 @@ export default function Home() {
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as GameMode)}
+          className="controls-select"
           style={selectStyle}
         >
           <option value="standard4">Standard 4-Player (19 tiles)</option>
@@ -127,7 +130,7 @@ export default function Home() {
 
         {isSeafarers && (
           <>
-            <label style={{
+            <label className="controls-label" style={{
               fontFamily: "'Cinzel', serif",
               fontSize: '0.8rem',
               color: '#a07840',
@@ -139,6 +142,7 @@ export default function Home() {
             <select
               value={layout}
               onChange={(e) => setLayout(e.target.value as LayoutType)}
+              className="controls-select"
               style={selectStyle}
             >
               <option value="classic">Classic Island</option>
@@ -151,6 +155,7 @@ export default function Home() {
         <button
           onClick={handleGenerate}
           disabled={isPending}
+          className="controls-btn"
           style={{
             background: isPending
               ? 'linear-gradient(160deg, #7a6010, #9a8030, #6a5010)'
@@ -188,7 +193,7 @@ export default function Home() {
       </p>
 
       {/* ── Main content ── */}
-      <div style={{
+      <div className="main-content" style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: 24,
