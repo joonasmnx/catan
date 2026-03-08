@@ -275,9 +275,9 @@
   .bar-red   { background: linear-gradient(90deg, #7a1010, #f45050); box-shadow: 0 0 6px rgba(244,80,80,0.3); }
 
   .sub-score .desc {
-    font-size: 0.73rem;
-    color: #5a4828;
-    line-height: 1.5;
+    font-size: 0.80rem;
+    color: #6a5535;
+    line-height: 1.55;
     font-style: italic;
   }
 
@@ -1114,7 +1114,7 @@ function drawHex(cx, cy, size, resource) {
   ctx.fillStyle = 'rgba(0,0,0,0.32)';
   ctx.fill();
 
-  // Main hex fill — radial gradient off-center for depth
+  // Main hex fill
   ctx.beginPath();
   tracePath(corners);
   const grad = ctx.createRadialGradient(
@@ -1127,20 +1127,29 @@ function drawHex(cx, cy, size, resource) {
   ctx.fillStyle = grad;
   ctx.fill();
 
+  // Terrain illustration clipped to inner hex
+  ctx.save();
+  ctx.beginPath();
+  tracePath(hexCorners(cx, cy, size * 0.83));
+  ctx.clip();
+  drawTerrainDetails(cx, cy, size, resource);
+  ctx.restore();
+
   // Bold outer border
+  ctx.beginPath();
+  tracePath(corners);
   ctx.strokeStyle = 'rgba(0,0,0,0.72)';
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Inner bevel ring (lighter frame, like a raised tile edge)
+  // Inner bevel ring
   ctx.beginPath();
   tracePath(hexCorners(cx, cy, size * 0.87));
   ctx.strokeStyle = 'rgba(255,255,255,0.14)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Upper-left edge highlight (light source top-left)
-  // Flat-top corners: 0=right, 1=lower-right, 2=lower-left, 3=left, 4=upper-left, 5=upper-right
+  // Upper-left edge highlight
   ctx.beginPath();
   ctx.moveTo(corners[3].x, corners[3].y);
   ctx.lineTo(corners[4].x, corners[4].y);
@@ -1161,44 +1170,219 @@ function drawHex(cx, cy, size, resource) {
   ctx.stroke();
 }
 
-function drawNumberToken(cx, cy, number) {
-  const isRed = number === 6 || number === 8;
-  const r = 14;
+/* ── Terrain illustrations ─────────────────────────────────────────────── */
 
-  // Token shadow
+function drawTerrainDetails(cx, cy, size, resource) {
+  switch (resource) {
+    case R.FOREST:    _drawForest(cx, cy, size);    break;
+    case R.FIELDS:    _drawFields(cx, cy, size);    break;
+    case R.MOUNTAINS: _drawMountains(cx, cy, size); break;
+    case R.PASTURE:   _drawPasture(cx, cy, size);   break;
+    case R.HILLS:     _drawHills(cx, cy, size);     break;
+    case R.DESERT:    _drawDesert(cx, cy, size);    break;
+  }
+}
+
+function _pine(x, y, s) {
+  for (let i = 0; i < 3; i++) {
+    const ls = s * (1 - i * 0.18);
+    const ly = y - s * 0.25 + i * s * 0.20;
+    ctx.beginPath();
+    ctx.moveTo(x, ly - ls * 0.75);
+    ctx.lineTo(x - ls * 0.58, ly + ls * 0.38);
+    ctx.lineTo(x + ls * 0.58, ly + ls * 0.38);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${10+i*10},${52+i*14},${10+i*8},${0.75-i*0.08})`;
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(50,25,8,0.55)';
+  ctx.fillRect(x - s*0.07, y + s*0.30, s*0.14, s*0.30);
+}
+
+function _drawForest(cx, cy, size) {
+  const s = size * 0.29;
+  _pine(cx - size*0.24, cy - size*0.14, s);
+  _pine(cx + size*0.24, cy - size*0.14, s);
+  _pine(cx,             cy + size*0.16, s * 1.1);
+  _pine(cx - size*0.42, cy + size*0.08, s * 0.78);
+  _pine(cx + size*0.40, cy + size*0.06, s * 0.78);
+}
+
+function _drawFields(cx, cy, size) {
+  for (let i = 0; i < 9; i++) {
+    const angle = (i / 9) * Math.PI * 1.75 - 0.45;
+    const rad = size * (0.20 + (i % 3) * 0.13);
+    const sx = cx + Math.cos(angle) * rad;
+    const sy = cy + Math.sin(angle) * rad * 0.62;
+    const h  = size * 0.20;
+    ctx.beginPath();
+    ctx.moveTo(sx + size*0.01, sy + h * 0.45);
+    ctx.lineTo(sx,             sy - h * 0.48);
+    ctx.strokeStyle = 'rgba(135,90,8,0.52)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(sx, sy - h * 0.58, size*0.036, size*0.10, -0.18, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(190,140,12,0.62)';
+    ctx.fill();
+  }
+}
+
+function _drawMountains(cx, cy, size) {
+  // Back peak
   ctx.beginPath();
-  ctx.arc(cx, cy - 4, r + 2, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.moveTo(cx + size*0.20, cy - size*0.22);
+  ctx.lineTo(cx - size*0.06, cy + size*0.28);
+  ctx.lineTo(cx + size*0.52, cy + size*0.28);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(68,80,96,0.50)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + size*0.20, cy - size*0.22);
+  ctx.lineTo(cx + size*0.08, cy - size*0.03);
+  ctx.lineTo(cx + size*0.32, cy - size*0.03);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(215,225,238,0.72)';
+  ctx.fill();
+  // Front peak
+  ctx.beginPath();
+  ctx.moveTo(cx - size*0.10, cy - size*0.38);
+  ctx.lineTo(cx - size*0.52, cy + size*0.28);
+  ctx.lineTo(cx + size*0.22, cy + size*0.28);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(85,98,116,0.60)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx - size*0.10, cy - size*0.38);
+  ctx.lineTo(cx - size*0.25, cy - size*0.12);
+  ctx.lineTo(cx + size*0.05, cy - size*0.12);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(225,235,248,0.80)';
+  ctx.fill();
+}
+
+function _drawPasture(cx, cy, size) {
+  const flock = [
+    {x: cx - size*0.22, y: cy + size*0.06},
+    {x: cx + size*0.20, y: cy - size*0.10},
+    {x: cx + size*0.02, y: cy + size*0.24},
+  ];
+  for (const s of flock) {
+    const sc = size * 0.135;
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y, sc, sc * 0.68, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(235,235,220,0.72)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s.x + sc * 0.95, s.y - sc * 0.20, sc * 0.36, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(55,44,34,0.70)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(55,44,34,0.52)';
+    ctx.lineWidth = 1.2;
+    for (let l = 0; l < 4; l++) {
+      const lx = s.x - sc*0.55 + l * sc*0.38;
+      ctx.beginPath();
+      ctx.moveTo(lx, s.y + sc*0.52);
+      ctx.lineTo(lx, s.y + sc*1.05);
+      ctx.stroke();
+    }
+  }
+}
+
+function _drawHills(cx, cy, size) {
+  const bumps = [
+    {x: cx - size*0.18, y: cy + size*0.24, r: size*0.44, c: 'rgba(148,52,16,0.42)'},
+    {x: cx + size*0.20, y: cy + size*0.20, r: size*0.38, c: 'rgba(165,60,20,0.40)'},
+    {x: cx,             y: cy - size*0.02, r: size*0.34, c: 'rgba(182,68,24,0.38)'},
+  ];
+  for (const b of bumps) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, Math.PI, Math.PI*2);
+    ctx.fillStyle = b.c;
+    ctx.fill();
+  }
+  for (let i = 0; i < 5; i++) {
+    const rx = cx + Math.cos(i * 1.26) * size * 0.26;
+    const ry = cy + Math.sin(i * 1.26) * size * 0.16;
+    ctx.beginPath();
+    ctx.ellipse(rx, ry, size*0.048, size*0.032, i * 0.4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(115,42,14,0.38)';
+    ctx.fill();
+  }
+}
+
+function _drawDesert(cx, cy, size) {
+  for (let i = 0; i < 5; i++) {
+    const y = cy - size*0.24 + i * size*0.13;
+    const xs = Math.sin(i * 0.85) * size * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(cx - size*0.44 + xs, y);
+    ctx.quadraticCurveTo(cx + xs, y - size*0.06, cx + size*0.44 + xs, y + size*0.02);
+    ctx.strokeStyle = `rgba(148,112,40,${0.20 + i*0.04})`;
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
+  // Cactus
+  const cax = cx + size * 0.22, cay = cy + size * 0.14;
+  ctx.fillStyle = 'rgba(88,125,52,0.50)';
+  ctx.fillRect(cax - size*0.034, cay - size*0.24, size*0.068, size*0.28);
+  ctx.fillRect(cax - size*0.17,  cay - size*0.14, size*0.136, size*0.04);
+  ctx.fillRect(cax - size*0.17,  cay - size*0.24, size*0.04,  size*0.12);
+  ctx.fillRect(cax + size*0.034, cay - size*0.09, size*0.12,  size*0.04);
+  ctx.fillRect(cax + size*0.114, cay - size*0.20, size*0.04,  size*0.12);
+}
+
+function drawNumberToken(cx, cy, number, hexSize) {
+  const isRed = number === 6 || number === 8;
+  const r  = Math.max(14, hexSize * 0.23);
+  const ty = cy; // centered on tile
+
+  // Outer drop shadow
+  ctx.beginPath();
+  ctx.arc(cx + 1, ty + 2, r + 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.50)';
   ctx.fill();
 
-  // Token circle
-  const grad = ctx.createRadialGradient(cx - 3, cy - 7, 1, cx, cy - 4, r);
-  grad.addColorStop(0, '#fff8e8');
-  grad.addColorStop(1, '#e8d8b0');
+  // Token body — warm parchment gradient
+  const grad = ctx.createRadialGradient(cx - r*0.32, ty - r*0.32, r*0.04, cx, ty, r);
+  grad.addColorStop(0,   '#fffcf0');
+  grad.addColorStop(0.55, '#f2e0a8');
+  grad.addColorStop(1,   '#c8a045');
   ctx.beginPath();
-  ctx.arc(cx, cy - 4, r, 0, Math.PI * 2);
+  ctx.arc(cx, ty, r, 0, Math.PI * 2);
   ctx.fillStyle = grad;
   ctx.fill();
-  ctx.strokeStyle = '#8b7040';
-  ctx.lineWidth = 1.2;
+
+  // Outer ring
+  ctx.strokeStyle = isRed ? 'rgba(130,20,10,0.7)' : 'rgba(100,70,10,0.6)';
+  ctx.lineWidth = 1.8;
   ctx.stroke();
 
-  // Number text
-  ctx.fillStyle = isRed ? '#c0001a' : '#2a1a00';
-  ctx.font = `bold ${number >= 10 ? 12 : 13}px 'Cinzel', serif`;
+  // Inner decorative ring
+  ctx.beginPath();
+  ctx.arc(cx, ty, r * 0.76, 0, Math.PI * 2);
+  ctx.strokeStyle = isRed ? 'rgba(180,30,10,0.25)' : 'rgba(100,70,10,0.20)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Number
+  const fontSize = Math.round(number >= 10 ? r * 0.72 : r * 0.80);
+  ctx.fillStyle = isRed ? '#aa0010' : '#1c1000';
+  ctx.font = `bold ${fontSize}px 'Cinzel', serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(String(number), cx, cy - 4);
+  ctx.fillText(String(number), cx, ty - r * 0.06);
 
-  // Pip dots below number
+  // Pips
   const pips = PIPS[number] || 0;
-  const pipR = 1.8;
-  const spacing = 4.5;
-  const startX = cx - ((pips - 1) * spacing) / 2;
-  ctx.fillStyle = isRed ? '#c0001a' : '#2a1a00';
+  const pipR   = Math.max(1.6, r * 0.095);
+  const pipGap = pipR * 2.6;
+  const pipY   = ty + r * 0.50;
+  const pipX0  = cx - ((pips - 1) * pipGap) / 2;
+  ctx.fillStyle = isRed ? '#aa0010' : '#1c1000';
   for (let p = 0; p < pips; p++) {
     ctx.beginPath();
-    ctx.arc(startX + p * spacing, cy + 10, pipR, 0, Math.PI * 2);
+    ctx.arc(pipX0 + p * pipGap, pipY, pipR, 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -1277,7 +1461,7 @@ function renderBoard(board, mode) {
     const t = board.tiles[i];
     const { x, y } = axialToPixel(t.coord.q, t.coord.r, hexSize, origin);
     drawHex(x, y, hexSize, t.resource);
-    if (t.number) drawNumberToken(x, y, t.number);
+    if (t.number) drawNumberToken(x, y, t.number, hexSize);
   }
 
   // Draw ports
@@ -1319,11 +1503,11 @@ function updateScorePanel(cibi, attempts) {
   totalEl.className = `big-num ${colorClass(cibi.total)}`;
 
   const subScoreData = [
-    { name: 'Pip Balance',          key: 'pipBalance',           weight: '30%', desc: 'All five resources get roughly equal dice probability — no single resource dominates production.' },
-    { name: 'Intersection Quality', key: 'intersectionQuality',  weight: '30%', desc: 'Every corner where 3 tiles meet has diverse resources and decent numbers — good spots to build settlements.' },
-    { name: 'Resource Clustering',  key: 'resourceClustering',   weight: '20%', desc: 'Same-type tiles are spread across the board, not bunched together — prevents one player from monopolising a resource.' },
-    { name: 'Red Number Spread',    key: 'redNumberSpread',      weight: '10%', desc: '6s and 8s (the most frequently rolled numbers) are placed far apart so every player can access high-production tiles.' },
-    { name: 'Desert Placement',     key: 'desertPlacement',      weight: '10%', desc: 'The desert produces nothing — ideally it sits near the edge rather than blocking prime settlement spots.' },
+    { name: 'Pip Balance',          key: 'pipBalance',           weight: '30%', desc: 'All five resources earn roughly equal dice probability. No single resource dominates production.' },
+    { name: 'Intersection Quality', key: 'intersectionQuality',  weight: '30%', desc: 'Every corner where three tiles meet offers varied resources and solid numbers. Good spots to settle.' },
+    { name: 'Resource Clustering',  key: 'resourceClustering',   weight: '20%', desc: 'Same resource tiles spread across the whole board. No player monopolises a single material.' },
+    { name: 'Red Number Spread',    key: 'redNumberSpread',      weight: '10%', desc: '6s and 8s are the most rolled numbers. Placing them far apart gives every player fair access.' },
+    { name: 'Desert Placement',     key: 'desertPlacement',      weight: '10%', desc: 'The desert earns nothing. It belongs near the edge where it blocks as few good spots as possible.' },
   ];
 
   const container = document.getElementById('subScores');
@@ -1350,7 +1534,8 @@ function updateScorePanel(cibi, attempts) {
      Best board found at attempt <span>#${attempts}</span><br>
      <span style="color:#4a8;font-size:0.78rem">
        ${cibi.total >= 70 ? '✦ Excellent balance' : cibi.total >= 45 ? '◆ Moderate balance' : '▲ Low balance — try again'}
-     </span>`;
+     </span><br>
+     <span style="color:#5a4020;font-size:0.74rem;font-style:italic">Ready to Ain?</span>`;
 }
 
 function buildLegend() {
