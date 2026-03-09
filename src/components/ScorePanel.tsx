@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import type { CIBIScore } from '@/lib/types';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
   attempts: number;
   mode: string;
   layout: string;
+  boardKey: number;
 }
 
 interface SubScore {
@@ -20,189 +22,171 @@ const SUB_SCORES: SubScore[] = [
   {
     key: 'pipBalance',
     label: 'Pip Balance',
-    weight: '30%',
-    desc: 'Every resource earns roughly equal dice odds. No single material dominates income.',
+    weight: '25%',
+    desc: 'Every resource earns roughly equal dice odds across all its tiles.',
   },
   {
     key: 'intersectionQuality',
     label: 'Settlement Spots',
     weight: '30%',
-    desc: 'Each corner where three tiles meet offers variety. Strong spots blend three resources with decent numbers.',
+    desc: 'Corners where three tiles meet offer resource variety and decent pip totals.',
   },
   {
     key: 'resourceClustering',
     label: 'Resource Spread',
-    weight: '20%',
-    desc: 'Same-type tiles are placed far apart. No corner of the board monopolises one material.',
+    weight: '25%',
+    desc: 'Same-type tiles are spread far apart — no corner monopolises one material.',
   },
   {
     key: 'redNumberSpread',
     label: '6 & 8 Spread',
-    weight: '10%',
-    desc: 'The most-rolled numbers are well separated. Multiple players benefit from high-frequency tiles.',
+    weight: '15%',
+    desc: 'The most-rolled numbers are well separated so multiple players benefit.',
   },
   {
     key: 'desertPlacement',
     label: 'Desert Position',
-    weight: '10%',
-    desc: 'The barren desert sits toward the edge. The dead tile wastes as few valuable settlement spots as possible.',
+    weight: '5%',
+    desc: 'The barren desert sits toward the edge, wasting as few good spots as possible.',
   },
 ];
 
-function scoreColor(v: number): string {
-  if (v >= 75) return '#5ecf62';
-  if (v >= 55) return '#ffaa20';
-  return '#f45050';
+function barColor(v: number): string {
+  if (v >= 75) return '#22c55e';
+  if (v >= 50) return '#f59e0b';
+  return '#ef4444';
 }
 
-function BarFill({ value }: { value: number }) {
-  const color = scoreColor(value);
-  const gradMap: Record<string, string> = {
-    '#5ecf62': 'linear-gradient(90deg, #1a5c1e, #5ecf62)',
-    '#ffaa20': 'linear-gradient(90deg, #8a4800, #ffaa20)',
-    '#f45050': 'linear-gradient(90deg, #7a1010, #f45050)',
-  };
-  return (
-    <div style={{
-      background: '#1a1408',
-      borderRadius: 4,
-      height: 7,
-      overflow: 'hidden',
-      marginBottom: 5,
-      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.5)',
-    }}>
-      <div style={{
-        height: '100%',
-        width: `${value}%`,
-        borderRadius: 4,
-        background: gradMap[color] || gradMap['#ffaa20'],
-        transition: 'width 0.7s cubic-bezier(.4,0,.2,1)',
-        boxShadow: `0 0 6px ${color}66`,
-      }} />
-    </div>
-  );
+function verdictLabel(score: number): { text: string; bg: string; color: string } {
+  if (score >= 85) return { text: 'Exceptional', bg: 'rgba(34,197,94,0.14)', color: '#22c55e' };
+  if (score >= 70) return { text: 'Excellent', bg: 'rgba(34,197,94,0.10)', color: '#4ade80' };
+  if (score >= 55) return { text: 'Decent', bg: 'rgba(245,158,11,0.12)', color: '#fbbf24' };
+  return { text: 'Try again', bg: 'rgba(239,68,68,0.12)', color: '#f87171' };
 }
 
-export default function ScorePanel({ cibi, attempts, mode, layout }: Props) {
+function modeLabel(mode: string): string {
+  return mode
+    .replace('standard', 'Standard ')
+    .replace('seafarers', 'Seafarers ')
+    .replace('4', '4P')
+    .replace('56', '5–6P');
+}
+
+function layoutLabel(layout: string): string {
+  if (layout === 'classic') return 'Classic Island';
+  if (layout === 'archipelago') return 'Archipelago';
+  return 'Twin Islands';
+}
+
+/** Animated count-up from 0 to target over ~800ms */
+function useCountUp(target: number | null, boardKey: number): number {
+  const [display, setDisplay] = useState(0);
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    cancelAnimationFrame(rafRef.current);
+    if (target === null) { setDisplay(0); return; }
+    const finalTarget = target;
+    const start = performance.now();
+    const duration = 750;
+    function tick(now: number) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(finalTarget * eased));
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [target, boardKey]); // boardKey resets animation for same score re-generates
+
+  return display;
+}
+
+export default function ScorePanel({ cibi, attempts, mode, layout, boardKey }: Props) {
   const totalScore = cibi?.total ?? null;
-  const scoreCol = totalScore !== null ? scoreColor(totalScore) : '#7a6030';
+  const displayScore = useCountUp(totalScore, boardKey);
+  const scoreCol = totalScore !== null ? barColor(totalScore) : 'var(--text-3)';
+  const verdict = totalScore !== null ? verdictLabel(totalScore) : null;
+  const isSeafarers = mode.includes('seafarers');
 
-  const modeLabel = mode.replace('standard', 'Standard ').replace('seafarers', 'Seafarers ')
-    .replace('4', '4-player').replace('56', '5–6 player');
-  const layoutLabel = layout === 'classic' ? 'Classic Island' : layout === 'archipelago' ? 'Archipelago' : 'Twin Islands';
+  if (!cibi) {
+    return (
+      <div style={{ padding: '12px 0' }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-3)', lineHeight: 1.6 }}>
+          Generate a board to see the CIBI balance score — it rates pip distribution, settlement spot quality, resource spread, and number placement.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="score-panel" style={{
-      background: 'linear-gradient(170deg, #201a10 0%, #181410 100%)',
-      border: '1px solid #4a3818',
-      borderTop: '1px solid #6a5025',
-      borderRadius: 12,
-      overflow: 'hidden',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-    }}>
+    <div className="score-card">
       {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #2a1e08, #3a2a10, #2a1e08)',
-        borderBottom: '1px solid #5a4018',
-        padding: '16px 20px 14px',
-        textAlign: 'center',
-      }}>
-        <h2 style={{
-          fontFamily: "'Cinzel', serif",
-          color: '#d4a843',
-          fontSize: '1rem',
-          letterSpacing: 3,
-          textTransform: 'uppercase',
-        }}>
-          CIBI Balance Score
-        </h2>
+      <div className="score-card-header">
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          CIBI Score
+        </span>
+        {verdict && (
+          <span className="score-verdict" style={{ background: verdict.bg, color: verdict.color }}>
+            {verdict.text}
+          </span>
+        )}
       </div>
 
-      <div style={{ padding: 20 }}>
-        {/* Big score */}
-        <div style={{
-          textAlign: 'center',
-          marginBottom: 6,
-          paddingBottom: 16,
-          borderBottom: '1px solid #2e2410',
-        }}>
-          <div style={{
-            fontFamily: "'Cinzel', serif",
-            fontSize: '3.6rem',
-            fontWeight: 700,
-            lineHeight: 1,
-            color: scoreCol,
-            textShadow: `0 0 30px ${scoreCol}`,
-          }}>
-            {totalScore !== null ? totalScore : '—'}
-          </div>
-          <div style={{
-            fontSize: '0.72rem',
-            color: '#7a6030',
-            textTransform: 'uppercase',
-            letterSpacing: 2.5,
-            marginTop: 2,
-          }}>
-            / 100 · CIBI Index
-          </div>
-        </div>
+      {/* Big number */}
+      <div className="score-total-block">
+        <span className="score-total-num" style={{ color: scoreCol }}>
+          {displayScore}
+        </span>
+        <span className="score-total-denom">/ 100</span>
+      </div>
 
-        {/* CIBI description */}
-        <div style={{
-          background: 'rgba(0,0,0,0.25)',
-          border: '1px solid #2e2410',
-          borderRadius: 6,
-          padding: '10px 12px',
-          margin: '14px 0',
-          fontSize: '0.78rem',
-          color: '#907050',
-          lineHeight: 1.65,
-        }}>
-          <strong style={{ color: '#b08840' }}>CIBI</strong> (Catan Intersection Balance Index) rates board fairness. <strong style={{ color: '#b08840' }}>70–84 is a good board</strong>, 85+ is exceptional. It checks pip balance across all resources, settlement spot variety, and that 6s &amp; 8s aren&apos;t clustered. Same resource types are never directly adjacent.
-        </div>
-
-        {/* Sub-scores */}
-        {cibi ? (
-          <div>
-            {SUB_SCORES.map((s, idx) => {
-              const val = cibi[s.key] as number;
-              const col = scoreColor(val);
-              return (
-                <div key={s.key} style={{ marginBottom: idx < SUB_SCORES.length - 1 ? 16 : 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-                    <span>
-                      <span style={{ fontSize: '0.82rem', color: '#c4a060', fontFamily: "'Cinzel', serif", letterSpacing: 0.5 }}>{s.label}</span>
-                      <span style={{ fontFamily: "'IM Fell English', serif", fontSize: '0.72rem', color: '#5a4020', fontStyle: 'italic', marginLeft: 4 }}>{s.weight}</span>
-                    </span>
-                    <span style={{ fontFamily: "'Cinzel', serif", fontSize: '0.95rem', fontWeight: 700, color: col, minWidth: 28, textAlign: 'right' }}>{val}</span>
-                  </div>
-                  <BarFill value={val} />
-                  <p style={{ fontSize: '0.80rem', color: '#6a5535', lineHeight: 1.55, fontStyle: 'italic' }}>{s.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p style={{ color: '#7a6030', fontSize: '0.82rem', textAlign: 'center', padding: '12px 0' }}>
-            Generate a board to see scores.
-          </p>
-        )}
-
-        {cibi && (
-          <>
-            <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, #3a2c14, transparent)', margin: '16px 0' }} />
-            <div style={{ fontSize: '0.78rem', color: '#7a6030', lineHeight: 1.75 }}>
-              <div>Mode <span style={{ color: '#b08840', fontWeight: 'bold' }}>{modeLabel}</span></div>
-              {layout !== 'classic' && (
-                <div>Layout <span style={{ color: '#b08840', fontWeight: 'bold' }}>{layoutLabel}</span></div>
-              )}
-              <div>Attempts <span style={{ color: '#b08840', fontWeight: 'bold' }}>{attempts.toLocaleString()}</span></div>
-              <div>Verdict <span style={{ color: totalScore! >= 70 ? '#5ecf62' : totalScore! >= 45 ? '#ffaa20' : '#f45050', fontWeight: 'bold' }}>
-                {totalScore! >= 85 ? 'Exceptional board' : totalScore! >= 70 ? 'Excellent board' : totalScore! >= 55 ? 'Decent board' : 'Try again'}
-              </span></div>
+      {/* Sub-scores */}
+      <div>
+        {SUB_SCORES.map((s) => {
+          const val = cibi[s.key] as number;
+          const col = barColor(val);
+          return (
+            <div key={s.key} className="subscore-row">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text)' }}>{s.label}</span>
+                <span style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-3)', fontWeight: 500 }}>{s.weight}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: col, minWidth: 26, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{val}</span>
+                </span>
+              </div>
+              <div className="bar-track">
+                <div
+                  className="bar-fill"
+                  style={{
+                    width: `${val}%`,
+                    background: col,
+                    boxShadow: `0 0 8px ${col}55`,
+                  }}
+                />
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-3)', lineHeight: 1.55, marginTop: 2 }}>{s.desc}</p>
             </div>
-          </>
+          );
+        })}
+      </div>
+
+      {/* Footer meta */}
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Mode</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', fontWeight: 600 }}>{modeLabel(mode)}</span>
+        </div>
+        {isSeafarers && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Layout</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', fontWeight: 600 }}>{layoutLabel(layout)}</span>
+          </div>
         )}
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Attempts</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', fontWeight: 600 }}>{attempts.toLocaleString()}</span>
+        </div>
       </div>
     </div>
   );

@@ -1,93 +1,414 @@
-@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* ── Design tokens ─────────────────────────────────────────────────── */
 :root {
-  --gold: #d4a843;
-  --gold-dim: #907040;
-  --bg: #1e1912;
-  --panel: #262010;
-  --border: #4a3818;
+  --bg:           #09111f;
+  --surface:      #0e1a30;
+  --panel-bg:     rgba(255, 255, 255, 0.035);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --accent:       #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-dim:   rgba(34, 211, 238, 0.12);
+  --text:         #e2e8f8;
+  --text-2:       #6b80a8;
+  --text-3:       #2e3f60;
+  --green:        #22c55e;
+  --amber:        #f59e0b;
+  --red:          #ef4444;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { color-scheme: dark; }
 
 body {
   background: var(--bg);
+  /* subtle depth gradients — board tiles are the hero */
   background-image:
-    radial-gradient(ellipse at 50% 0%, rgba(90,55,10,0.40) 0%, transparent 65%),
-    radial-gradient(ellipse at 50% 100%, rgba(20,10,5,0.55) 0%, transparent 60%);
-  color: #e8d5a3;
-  font-family: 'IM Fell English', Georgia, serif;
+    radial-gradient(circle at 18% 18%, rgba(34, 211, 238, 0.045) 0%, transparent 45%),
+    radial-gradient(circle at 82% 82%, rgba(99, 102, 241, 0.04) 0%, transparent 45%);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
-  /* Prevent horizontal overflow on mobile */
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Responsive board canvas ─────────────────────────────────────── */
+/* ── Three-area grid ───────────────────────────────────────────────── */
+/*  desktop:  [controls | board]          */
+/*             [score   | board]          */
+/*  mobile:   controls → board → score   */
+
+.app-shell {
+  display: grid;
+  grid-template-areas:
+    "sidebar  board"
+    "score    board";
+  grid-template-columns: 296px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Sidebar: controls ──────────────────────────────────────────────── */
+.sidebar {
+  grid-area: sidebar;
+  padding: 28px 20px 16px;
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Score area ─────────────────────────────────────────────────────── */
+.score-area {
+  grid-area: score;
+  padding: 0 20px 32px;
+  border-right: 1px solid var(--panel-border);
+  overflow-y: auto;
+}
+
+/* ── Board area ─────────────────────────────────────────────────────── */
+.board-area {
+  grid-area: board;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  /* sticky: board stays visible while sidebar scrolls */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Canvas ─────────────────────────────────────────────────────────── */
 .board-canvas-wrap {
   width: 100%;
-  max-width: 744px;
-  flex-shrink: 0;
+  max-width: 660px;
+  border-radius: 14px;
+  /* subtle glow around the board */
+  box-shadow: 0 0 0 1px var(--panel-border), 0 24px 80px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  background: #06090f;
 }
 
 .board-canvas {
   display: block;
   width: 100%;
-  max-width: 720px;
   aspect-ratio: 1 / 1;
-  border-radius: 4px;
 }
 
-/* ── Touch-friendly controls ─────────────────────────────────────── */
-.controls-select {
-  min-height: 44px;
-  font-size: 1rem !important;
-  width: 100%;
+@keyframes board-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-.controls-btn {
-  min-height: 44px;
-  width: 100%;
+.board-animate {
+  animation: board-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ── Score panel responsive ──────────────────────────────────────── */
-.score-panel {
-  min-width: 290px;
-  max-width: 340px;
+/* ── Section label ──────────────────────────────────────────────────── */
+.section-label {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  display: block;
+  margin-bottom: 9px;
+}
+
+/* ── Pill toggle group ───────────────────────────────────────────────── */
+.pill-group {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.pill-btn {
   flex: 1;
+  padding: 8px 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+  text-align: center;
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
-/* ── Mobile overrides ────────────────────────────────────────────── */
-@media (max-width: 600px) {
-  .page-outer {
-    padding: 20px 12px 40px !important;
-  }
+.pill-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
 
-  .controls-row {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 14px 16px !important;
-    gap: 10px !important;
-  }
+.pill-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
 
-  .controls-label {
-    text-align: left;
-  }
+/* layout pills are vertical */
+.pill-group.vertical {
+  flex-direction: column;
+}
 
-  .score-panel {
-    min-width: unset;
+.pill-group.vertical .pill-btn {
+  text-align: left;
+  padding: 9px 12px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.btn-generate {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #030d17;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.13s ease, transform 0.13s ease, box-shadow 0.13s ease;
+  white-space: nowrap;
+}
+
+.btn-generate:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 211, 238, 0.28);
+}
+
+.btn-generate:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-generate:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* spinning indicator when generating */
+.btn-generate.pending::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(3, 13, 23, 0.4);
+  border-top-color: #030d17;
+  border-radius: 50%;
+  margin-left: 8px;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-regen {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.13s ease;
+  flex-shrink: 0;
+}
+
+.btn-regen:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: rotate(30deg);
+}
+
+.btn-regen:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Score card ──────────────────────────────────────────────────────── */
+.score-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.score-card-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-total-block {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 16px 16px 14px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.score-total-num {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
+}
+
+.score-total-denom {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.score-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  margin-left: auto;
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────── */
+.bar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  height: 4px;
+  overflow: hidden;
+  margin: 5px 0 4px;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Sub-score rows ──────────────────────────────────────────────────── */
+.subscore-row {
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.subscore-row:last-child {
+  border-bottom: none;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 440px;
+  gap: 14px;
+  color: var(--text-3);
+  text-align: center;
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--panel-border);
+  margin: 4px 0;
+}
+
+/* ── Status text ─────────────────────────────────────────────────────── */
+.status-text {
+  font-size: 0.73rem;
+  color: var(--text-3);
+  min-height: 18px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-areas:
+      "sidebar"
+      "board"
+      "score";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
     max-width: 100%;
-    width: 100%;
   }
 
-  .main-content {
-    gap: 16px !important;
-    padding: 0 !important;
-    width: 100% !important;
+  .sidebar {
+    padding: 20px 16px 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+    gap: 16px;
+  }
+
+  .score-area {
+    padding: 16px 16px 32px;
+    border-right: none;
+  }
+
+  .board-area {
+    position: static;
+    height: auto;
+    padding: 20px 16px 8px;
+  }
+
+  .pill-btn {
+    font-size: 0.75rem;
+    padding: 7px 5px;
   }
 
   .board-canvas-wrap {
