@@ -118,8 +118,12 @@ function checkNoAdjacentSameNumber(
 }
 
 /** Distribute numbers so each resource type gets a spread of pip values.
- *  Sorts numbers best-first, then assigns round-robin across resource types. */
-function assignNumbersBalanced(tiles: Tile[], mode: string): boolean {
+ *  Sorts numbers best-first, then assigns round-robin across resource types.
+ *  When coordIndex is provided, retries position shuffles up to MAX_INNER
+ *  times internally to satisfy no-adjacent-same-number before returning. */
+function assignNumbersBalanced(
+  tiles: Tile[], mode: string, coordIndex?: Record<string, number>
+): boolean {
   const numberPool = buildNumberList(mode);
   const resources = [R.FOREST, R.PASTURE, R.FIELDS, R.MOUNTAINS, R.HILLS];
   const groupIndices: Record<string, number[]> = {};
@@ -156,12 +160,20 @@ function assignNumbersBalanced(tiles: Tile[], mode: string): boolean {
   for (const r of resources) assignedNums[r] = [];
   for (let k = 0; k < slots.length; k++) assignedNums[slots[k]].push(sortedNums[k]);
 
-  // Assign to tile positions (shuffle within each resource for positional variety)
-  for (const r of resources) {
-    const nums = shuffle(assignedNums[r]);
-    const indices = shuffle([...groupIndices[r]]);
-    for (let k = 0; k < indices.length; k++) tiles[indices[k]].number = nums[k];
+  // Retry position shuffles to satisfy no-adjacent-same-number.
+  // With balanced assignment, same numbers land on different resources whose tiles
+  // border each other, making same-number adjacency common — so we need retries.
+  const MAX_INNER = coordIndex ? 40 : 1;
+  for (let retry = 0; retry < MAX_INNER; retry++) {
+    for (const r of resources) {
+      const nums = shuffle(assignedNums[r]);
+      const indices = shuffle([...groupIndices[r]]);
+      for (let k = 0; k < indices.length; k++) tiles[indices[k]].number = nums[k];
+    }
+    if (!coordIndex || checkNoAdjacentSameNumber(tiles, coordIndex)) return true;
   }
+  // Could not satisfy no-adjacent-same-number in MAX_INNER retries;
+  // leave tiles with the last assignment and let the caller decide.
   return true;
 }
 
@@ -318,11 +330,12 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
     coordIndex[`${coordList[i].q},${coordList[i].r}`] = i;
   }
   const tilePool = buildTileList(TILE_COUNTS[mode]);
-  const MAX_ATTEMPTS = 3000;
+  const MAX_ATTEMPTS = 4000;
   let bestBoard: Board | null = null;
   let bestScore = -1;
   let attempts = 0;
 
+  // ── Pass 1: all constraints (resource + reds + same-number) ─────────
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     attempts++;
     const resources = shuffle(tilePool);
@@ -332,32 +345,54 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
       coord: coordList[i],
     }));
     if (!checkNoAdjacentSameResource(tilesSoFar, coordIndex)) continue;
-    // Balanced assignment: distribute good numbers (6,8,5,9) across all resource types
-    if (!assignNumbersBalanced(tilesSoFar, mode)) continue;
+    // assignNumbersBalanced internally retries positions to satisfy same-number constraint
+    assignNumbersBalanced(tilesSoFar, mode, coordIndex);
     if (!checkNoAdjacentReds(tilesSoFar, coordIndex)) continue;
     if (!checkNoAdjacentSameNumber(tilesSoFar, coordIndex)) continue;
     const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
     if (cibi.total > bestScore) {
       bestScore = cibi.total;
-      // Deep-copy tiles so mutations in next iteration don't affect stored board
-      bestBoard = {
-        tiles: tilesSoFar.map(t => ({ ...t })),
-        coordList, coordIndex, cibi, attempts,
-      };
+      bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
     }
   }
 
+  // ── Pass 2 (if pass 1 found nothing): relax same-number constraint ──
   if (!bestBoard) {
-    // Fallback: unconstrained board (rare; only if all 3000 attempts failed constraints)
-    const resources = shuffle(tilePool);
-    const tiles: Tile[] = resources.map((res, i) => ({
-      resource: res as Tile['resource'],
-      number: null,
-      coord: coordList[i],
-    }));
-    assignNumbersBalanced(tiles, mode);
-    const cibi = computeCIBI(tiles, coordList, coordIndex);
-    bestBoard = { tiles, coordList, coordIndex, cibi, attempts: MAX_ATTEMPTS };
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      attempts++;
+      const resources = shuffle(tilePool);
+      const tilesSoFar: Tile[] = resources.map((res, i) => ({
+        resource: res as Tile['resource'],
+        number: null,
+        coord: coordList[i],
+      }));
+      if (!checkNoAdjacentSameResource(tilesSoFar, coordIndex)) continue;
+      assignNumbersBalanced(tilesSoFar, mode, coordIndex);
+      if (!checkNoAdjacentReds(tilesSoFar, coordIndex)) continue;
+      const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
+      if (cibi.total > bestScore) {
+        bestScore = cibi.total;
+        bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
+      }
+    }
+  }
+
+  // ── Pass 3 (last resort): only resource constraint ───────────────────
+  if (!bestBoard) {
+    for (let attempt = 0; attempt < 2000; attempt++) {
+      attempts++;
+      const resources = shuffle(tilePool);
+      const tilesSoFar: Tile[] = resources.map((res, i) => ({
+        resource: res as Tile['resource'],
+        number: null,
+        coord: coordList[i],
+      }));
+      if (!checkNoAdjacentSameResource(tilesSoFar, coordIndex)) continue;
+      assignNumbersBalanced(tilesSoFar, mode);
+      const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
+      bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
+      break; // take the first resource-valid board
+    }
   }
 
   if (isSeafarers) {
@@ -385,9 +420,12 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
         ports.push({ ...portList[p], coord: portCandidates[p] } as Port);
       }
     }
-    bestBoard.waterHexes = waterHexes;
-    bestBoard.ports = ports;
+    if (bestBoard) {
+      bestBoard.waterHexes = waterHexes;
+      bestBoard.ports = ports;
+    }
   }
 
-  return bestBoard;
+  // bestBoard is guaranteed non-null: pass 3 always produces at least one board
+  return bestBoard!;
 }
