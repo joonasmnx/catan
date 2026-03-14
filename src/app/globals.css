@@ -1,21 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
 @import "tailwindcss";
 
-/* ── Design tokens ─────────────────────────────────────────────────── */
+/* ── Design tokens — Catan sea-and-earth palette ───────────────────── */
 :root {
-  --bg:           #09111f;
-  --surface:      #0e1a30;
-  --panel-bg:     rgba(255, 255, 255, 0.035);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --accent:       #22d3ee;
-  --accent-hover: #67e8f9;
-  --accent-dim:   rgba(34, 211, 238, 0.12);
-  --text:         #e2e8f8;
-  --text-2:       #6b80a8;
-  --text-3:       #2e3f60;
-  --green:        #22c55e;
-  --amber:        #f59e0b;
-  --red:          #ef4444;
+  /* Backgrounds: deep dark ocean-teal, like Catan's sea tiles at night */
+  --bg:           #06100d;
+  --surface:      #0c1e18;
+
+  /* Panels: faint warm-green glass */
+  --panel-bg:     rgba(255, 255, 255, 0.038);
+  --panel-border: rgba(200, 160, 60, 0.14);   /* warm amber border */
+
+  /* Accent: golden amber — the color of Catan number tokens */
+  --accent:       #f0b429;
+  --accent-hover: #f7c94e;
+  --accent-dim:   rgba(240, 180, 41, 0.14);
+
+  /* Typography: warm cream/sand, not cold slate */
+  --text:         #ede3ce;
+  --text-2:       #7aaa90;   /* muted sea-teal */
+  --text-3:       #2e5844;   /* dark muted forest */
+
+  /* Score colours */
+  --green:        #34d399;   /* emerald */
+  --amber:        #fb923c;   /* brick/orange, like hill tiles */
+  --red:          #f87171;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,10 +33,10 @@ html { color-scheme: dark; }
 
 body {
   background: var(--bg);
-  /* subtle depth gradients — board tiles are the hero */
+  /* ocean depth: warm teal glow top-left (sea), earthy amber bottom-right (land) */
   background-image:
-    radial-gradient(circle at 18% 18%, rgba(34, 211, 238, 0.045) 0%, transparent 45%),
-    radial-gradient(circle at 82% 82%, rgba(99, 102, 241, 0.04) 0%, transparent 45%);
+    radial-gradient(circle at 18% 14%, rgba(10, 90, 60, 0.28) 0%, transparent 52%),
+    radial-gradient(circle at 84% 88%, rgba(100, 60, 10, 0.18) 0%, transparent 48%);
   color: var(--text);
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
@@ -56,6 +65,8 @@ body {
 .sidebar {
   grid-area: sidebar;
   padding: 28px 20px 16px;
+  /* subtle warm wood-frame tint like the Catan board border */
+  background: linear-gradient(180deg, rgba(90, 55, 10, 0.08) 0%, rgba(50, 30, 5, 0.05) 100%);
   border-right: 1px solid var(--panel-border);
   display: flex;
   flex-direction: column;
@@ -66,6 +77,7 @@ body {
 .score-area {
   grid-area: score;
   padding: 0 20px 32px;
+  background: linear-gradient(180deg, rgba(90, 55, 10, 0.05) 0%, rgba(50, 30, 5, 0.03) 100%);
   border-right: 1px solid var(--panel-border);
   overflow-y: auto;
 }
@@ -90,10 +102,14 @@ body {
   width: 100%;
   max-width: 660px;
   border-radius: 14px;
-  /* subtle glow around the board */
-  box-shadow: 0 0 0 1px var(--panel-border), 0 24px 80px rgba(0, 0, 0, 0.7);
+  /* amber-gold frame — like the physical Catan board border */
+  box-shadow:
+    0 0 0 1px rgba(180, 120, 20, 0.35),
+    0 0 0 3px rgba(100, 60, 5, 0.25),
+    0 28px 90px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(10, 60, 30, 0.25);
   overflow: hidden;
-  background: #06090f;
+  background: #030907;
 }
 
 .board-canvas {
@@ -125,7 +141,7 @@ body {
 /* ── Pill toggle group ───────────────────────────────────────────────── */
 .pill-group {
   display: flex;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 3px;
@@ -150,14 +166,16 @@ body {
 }
 
 .pill-btn:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(240, 180, 41, 0.07);
   color: var(--text);
 }
 
 .pill-btn.active {
   background: var(--accent-dim);
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
+  /* subtle inner glow like a Catan token being selected */
+  box-shadow: inset 0 0 0 1px rgba(240, 180, 41, 0.3);
 }
 
 /* layout pills are vertical */
@@ -190,7 +208,7 @@ body {
 .btn-generate:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(34, 211, 238, 0.28);
+  box-shadow: 0 6px 22px rgba(240, 180, 41, 0.35);
 }
 
 .btn-generate:active:not(:disabled) {
@@ -236,9 +254,9 @@ body {
 }
 
 .btn-regen:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(240, 180, 41, 0.3);
   transform: rotate(30deg);
 }
 
@@ -249,8 +267,10 @@ body {
 
 /* ── Score card ──────────────────────────────────────────────────────── */
 .score-card {
-  background: var(--panel-bg);
+  background: rgba(6, 20, 14, 0.7);
   border: 1px solid var(--panel-border);
+  /* top edge has a warmer amber glow — like a lit number token */
+  border-top: 1px solid rgba(200, 150, 40, 0.28);
   border-radius: 14px;
   overflow: hidden;
 }

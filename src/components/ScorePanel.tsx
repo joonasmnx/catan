@@ -111,9 +111,9 @@ export default function ScorePanel({ cibi, attempts, mode, layout, boardKey }: P
 
   if (!cibi) {
     return (
-      <div style={{ padding: '12px 0' }}>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-3)', lineHeight: 1.6 }}>
-          Generate a board to see the CIBI balance score — it rates pip distribution, settlement spot quality, resource spread, and number placement.
+      <div style={{ padding: '16px 0' }}>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', lineHeight: 1.65 }}>
+          Generate a board to see the <span style={{ color: 'var(--accent)', fontWeight: 600, opacity: 0.8 }}>CIBI</span> balance score — rates pip distribution, settlement spot quality, resource spread, and number placement.
         </p>
       </div>
     );
@@ -123,7 +123,7 @@ export default function ScorePanel({ cibi, attempts, mode, layout, boardKey }: P
     <div className="score-card">
       {/* Header */}
       <div className="score-card-header">
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-2)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           CIBI Score
         </span>
         {verdict && (
@@ -172,20 +172,20 @@ export default function ScorePanel({ cibi, attempts, mode, layout, boardKey }: P
       </div>
 
       {/* Footer meta */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Mode</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', fontWeight: 600 }}>{modeLabel(mode)}</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>Mode</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, opacity: 0.85 }}>{modeLabel(mode)}</span>
         </div>
         {isSeafarers && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Layout</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', fontWeight: 600 }}>{layoutLabel(layout)}</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>Layout</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, opacity: 0.85 }}>{layoutLabel(layout)}</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>Attempts</span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-2)', fontWeight: 600 }}>{attempts.toLocaleString()}</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>Attempts</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-2)', fontWeight: 600 }}>{attempts.toLocaleString()}</span>
         </div>
       </div>
     </div>

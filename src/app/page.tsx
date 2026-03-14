@@ -47,10 +47,10 @@ export default function Home() {
       <aside className="sidebar">
         {/* Title */}
         <div>
-          <p style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>
-            Ready to Ain?
+          <p style={{ fontSize: '0.66rem', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8 }}>
+            Settle Catan
           </p>
-          <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.025em' }}>
+          <h1 style={{ fontFamily: "'Syne', sans-serif", fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.01em' }}>
             Catan Map<br />Generator
           </h1>
           <p style={{ fontSize: '0.73rem', color: 'var(--text-2)', marginTop: 7, lineHeight: 1.6 }}>
@@ -162,9 +162,9 @@ export default function Home() {
                 <path d="M32 18L46 26V42L32 50L18 42V26L32 18Z" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.2" />
               </svg>
               <div>
-                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-2)', marginBottom: 4 }}>No board yet</p>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-3)', lineHeight: 1.5 }}>
-                  Configure your settings and<br />click Generate Board
+                <p style={{ fontFamily: "'Syne', sans-serif", fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}>No board yet</p>
+                <p style={{ fontSize: '0.76rem', color: 'var(--text-3)', lineHeight: 1.6 }}>
+                  Configure your settings and<br />click Generate Board to begin
                 </p>
               </div>
             </div>
