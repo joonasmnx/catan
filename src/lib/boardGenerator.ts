@@ -395,37 +395,48 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
     }
   }
 
-  if (isSeafarers) {
-    const waterHexes = waterCoords(coordList);
-    const landSet = new Set(coordList.map((h) => `${h.q},${h.r}`));
-    const portCandidates = waterHexes.filter((w) =>
-      hexNeighbors(w).some((n) => landSet.has(`${n.q},${n.r}`))
-    );
-    const portList = shuffle([...PORTS[mode]]);
-    const ports: Port[] = [];
-    const usedWater = new Set<string>();
-    for (let p = 0; p < portList.length && p < portCandidates.length; p++) {
-      let placed = false;
+  // Always generate the surrounding water ring and place ports on it.
+  // (For Standard mode the ring is implicit in the physical game; we render it
+  //  so harbours are always visible regardless of expansion.)
+  const waterHexes = waterCoords(coordList);
+  const landSet = new Set(coordList.map((h) => `${h.q},${h.r}`));
+  const portCandidates = waterHexes.filter((w) =>
+    hexNeighbors(w).some((n) => landSet.has(`${n.q},${n.r}`))
+  );
+  const portList = shuffle([...PORTS[mode]]);
+  const ports: Port[] = [];
+  const usedWater = new Set<string>();
+  for (let p = 0; p < portList.length; p++) {
+    if (portCandidates.length === 0) break;
+    let placed = false;
+    // Try to find a water hex that isn't too close to another port
+    for (const wh of portCandidates) {
+      const wk = `${wh.q},${wh.r}`;
+      if (usedWater.has(wk)) continue;
+      const tooClose = ports.some((pp) => hexDist(pp.coord, wh) < 2);
+      if (tooClose && ports.length < portList.length - 1) continue;
+      usedWater.add(wk);
+      ports.push({ ...portList[p], coord: wh } as Port);
+      placed = true;
+      break;
+    }
+    // Fallback: cycle through candidates, skip already-used ones
+    if (!placed) {
       for (const wh of portCandidates) {
         const wk = `${wh.q},${wh.r}`;
         if (usedWater.has(wk)) continue;
-        const tooClose = ports.some((pp) => hexDist(pp.coord, wh) < 2);
-        if (tooClose && ports.length < portList.length - 1) continue;
         usedWater.add(wk);
         ports.push({ ...portList[p], coord: wh } as Port);
-        placed = true;
         break;
       }
-      if (!placed && portCandidates.length > p) {
-        ports.push({ ...portList[p], coord: portCandidates[p] } as Port);
-      }
     }
-    if (bestBoard) {
-      bestBoard.waterHexes = waterHexes;
-      bestBoard.ports = ports;
-    }
+  }
+  if (bestBoard) {
+    bestBoard.waterHexes = waterHexes;
+    bestBoard.ports = ports;
   }
 
   // bestBoard is guaranteed non-null: pass 3 always produces at least one board
-  return bestBoard!;
+  if (!bestBoard) throw new Error('Board generation failed after all passes');
+  return bestBoard;
 }
