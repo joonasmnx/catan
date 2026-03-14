@@ -87,10 +87,10 @@ const PORTS: Record<string, Array<{ type: '2:1' | '3:1'; resource: typeof R.FORE
   standard56: [
     { type: '2:1', resource: R.FOREST },
     { type: '2:1', resource: R.PASTURE },
+    { type: '2:1', resource: R.PASTURE },  // Sheep ×2 per official 5-6p rules
     { type: '2:1', resource: R.FIELDS },
     { type: '2:1', resource: R.MOUNTAINS },
     { type: '2:1', resource: R.HILLS },
-    { type: '3:1', resource: null },
     { type: '3:1', resource: null },
     { type: '3:1', resource: null },
     { type: '3:1', resource: null },
