@@ -47,12 +47,12 @@ export type GameMode = 'standard4' | 'standard56' | 'seafarers4' | 'seafarers56'
 export type LayoutType = 'classic' | 'archipelago' | 'twin';
 
 export const RESOURCE_COLORS: Record<Resource, { base: string; mid: string; light: string }> = {
-  forest:    { base: '#1b4d1b', mid: '#2d7a2d', light: '#3da63d' },
-  pasture:   { base: '#3d7a00', mid: '#5ab300', light: '#7dcc1a' },
-  fields:    { base: '#b8860b', mid: '#d4a017', light: '#f0c040' },
-  mountains: { base: '#3c4a5c', mid: '#5a6e87', light: '#7a94b0' },
-  hills:     { base: '#8b3a1e', mid: '#c0522a', light: '#d97040' },
-  desert:    { base: '#c8b560', mid: '#ddc87a', light: '#eedc98' },
+  forest:    { base: '#0e4a28', mid: '#177040', light: '#1ea058' },  // deep emerald-green
+  pasture:   { base: '#3a7800', mid: '#60c000', light: '#88e020' },  // bright lime-green
+  fields:    { base: '#b88808', mid: '#dab018', light: '#f8d040' },
+  mountains: { base: '#404e60', mid: '#5e7490', light: '#80a0c0' },
+  hills:     { base: '#922a14', mid: '#c84020', light: '#e86040' },
+  desert:    { base: '#c0aa48', mid: '#d8c268', light: '#ecd890' },
   water:     { base: '#0d1f3c', mid: '#1a3a6e', light: '#2455a0' },
 };
 
