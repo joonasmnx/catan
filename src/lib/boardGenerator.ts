@@ -26,6 +26,52 @@ TILE_COUNTS.seafarers56 = TILE_COUNTS.standard56;
 const NUMBERS_4P = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
 const NUMBERS_56P = [2,2, 3,3,3, 4,4,4, 5,5,5, 6,6,6, 8,8,8, 9,9,9, 10,10,10, 11,11,11, 12,12];
 
+// ── Fixed harbour positions for Standard boards ─────────────────────
+//
+// In the physical Catan game the board frame is fixed; only tile arrangement
+// and harbour TYPES vary.  We mirror that here:
+//   • Standard modes  → fixed water-hex coordinates, shuffled types
+//   • Seafarers modes → random placement (island shape varies per layout)
+//
+// Standard 4-player (hexRing radius 3 = 18 water hexes).
+// Harbours are at every other hex — the alternating "even-index" positions —
+// exactly matching the physical base-game frame (9 of 18).
+// Sorted clockwise from SW, angular spacing ≈ 20° each.
+const STANDARD_4P_PORTS: HexCoord[] = [
+  { q: -3, r:  3 },   // SW
+  { q: -1, r:  3 },   // S
+  { q:  1, r:  2 },   // SSE
+  { q:  3, r:  0 },   // E
+  { q:  3, r: -2 },   // NNE
+  { q:  2, r: -3 },   // NE
+  { q:  0, r: -3 },   // N
+  { q: -2, r: -1 },   // NW
+  { q: -3, r:  1 },   // W
+];
+
+// Standard 5-6 player (24 water hexes around the larger island).
+// 11 harbours at alternating even-index positions, angular spacing ≈ 28-32°.
+// The small ~60° gap in the SW arc matches the concave corner geometry of
+// the 5-6p island (where two r-3 corner tiles were removed from land).
+const STANDARD_56P_PORTS: HexCoord[] = [
+  { q: -4, r:  1 },   // W
+  { q: -3, r: -1 },   // WNW
+  { q: -1, r: -3 },   // NNW
+  { q:  1, r: -4 },   // N
+  { q:  3, r: -4 },   // NNE
+  { q:  4, r: -3 },   // NE
+  { q:  4, r: -1 },   // ENE
+  { q:  3, r:  1 },   // E
+  { q:  1, r:  3 },   // SSE
+  { q: -1, r:  4 },   // S
+  { q: -3, r:  4 },   // SSW
+];
+
+const STANDARD_PORT_HEXES: Record<string, HexCoord[]> = {
+  standard4:  STANDARD_4P_PORTS,
+  standard56: STANDARD_56P_PORTS,
+};
+
 const PORTS: Record<string, Array<{ type: '2:1' | '3:1'; resource: typeof R.FOREST | typeof R.PASTURE | typeof R.FIELDS | typeof R.MOUNTAINS | typeof R.HILLS | null }>> = {
   standard4: [
     { type: '2:1', resource: R.FOREST },
@@ -41,10 +87,10 @@ const PORTS: Record<string, Array<{ type: '2:1' | '3:1'; resource: typeof R.FORE
   standard56: [
     { type: '2:1', resource: R.FOREST },
     { type: '2:1', resource: R.PASTURE },
+    { type: '2:1', resource: R.PASTURE },  // Sheep ×2 per official 5-6p rules
     { type: '2:1', resource: R.FIELDS },
     { type: '2:1', resource: R.MOUNTAINS },
     { type: '2:1', resource: R.HILLS },
-    { type: '3:1', resource: null },
     { type: '3:1', resource: null },
     { type: '3:1', resource: null },
     { type: '3:1', resource: null },
@@ -395,42 +441,50 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
     }
   }
 
-  // Always generate the surrounding water ring and place ports on it.
-  // (For Standard mode the ring is implicit in the physical game; we render it
-  //  so harbours are always visible regardless of expansion.)
+  // ── Water ring + harbour placement ──────────────────────────────────
   const waterHexes = waterCoords(coordList);
-  const landSet = new Set(coordList.map((h) => `${h.q},${h.r}`));
-  const portCandidates = waterHexes.filter((w) =>
-    hexNeighbors(w).some((n) => landSet.has(`${n.q},${n.r}`))
-  );
-  const portList = shuffle([...PORTS[mode]]);
-  const ports: Port[] = [];
-  const usedWater = new Set<string>();
-  for (let p = 0; p < portList.length; p++) {
-    if (portCandidates.length === 0) break;
-    let placed = false;
-    // Try to find a water hex that isn't too close to another port
-    for (const wh of portCandidates) {
-      const wk = `${wh.q},${wh.r}`;
-      if (usedWater.has(wk)) continue;
-      const tooClose = ports.some((pp) => hexDist(pp.coord, wh) < 2);
-      if (tooClose && ports.length < portList.length - 1) continue;
-      usedWater.add(wk);
-      ports.push({ ...portList[p], coord: wh } as Port);
-      placed = true;
-      break;
-    }
-    // Fallback: cycle through candidates, skip already-used ones
-    if (!placed) {
+  const portTypeList = shuffle([...PORTS[mode]]);
+  let ports: Port[];
+
+  if (isSeafarers) {
+    // Seafarers: random placement — island shape differs per layout
+    const landSet = new Set(coordList.map((h) => `${h.q},${h.r}`));
+    const portCandidates = waterHexes.filter((w) =>
+      hexNeighbors(w).some((n) => landSet.has(`${n.q},${n.r}`))
+    );
+    ports = [];
+    const usedWater = new Set<string>();
+    for (let p = 0; p < portTypeList.length; p++) {
+      if (portCandidates.length === 0) break;
+      let placed = false;
       for (const wh of portCandidates) {
         const wk = `${wh.q},${wh.r}`;
         if (usedWater.has(wk)) continue;
+        const tooClose = ports.some((pp) => hexDist(pp.coord, wh) < 2);
+        if (tooClose && ports.length < portTypeList.length - 1) continue;
         usedWater.add(wk);
-        ports.push({ ...portList[p], coord: wh } as Port);
+        ports.push({ ...portTypeList[p], coord: wh } as Port);
+        placed = true;
         break;
       }
+      if (!placed) {
+        for (const wh of portCandidates) {
+          const wk = `${wh.q},${wh.r}`;
+          if (usedWater.has(wk)) continue;
+          usedWater.add(wk);
+          ports.push({ ...portTypeList[p], coord: wh } as Port);
+          break;
+        }
+      }
     }
+  } else {
+    // Standard: fixed frame positions (identical every game), randomised types
+    const fixedCoords = STANDARD_PORT_HEXES[mode] ?? [];
+    ports = portTypeList
+      .slice(0, fixedCoords.length)
+      .map((p, i) => ({ ...p, coord: fixedCoords[i] } as Port));
   }
+
   if (bestBoard) {
     bestBoard.waterHexes = waterHexes;
     bestBoard.ports = ports;
