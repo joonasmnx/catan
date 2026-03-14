@@ -1,5 +1,5 @@
 import type { Board, HexCoord, Port, Resource, Tile } from './types';
-import { axialToPixel, hexCorners } from './hexGrid';
+import { axialToPixel, hexCorners, HEX_DIRS } from './hexGrid';
 import { PIPS, RESOURCE_COLORS } from './types';
 
 interface RenderParams {
@@ -674,23 +674,43 @@ function drawNumberToken(
 
 /* ── Water hex ─────────────────────────────────────────────────────── */
 
+/** Port accent colors (mid = badge fill, base = dark ring / wedge lines) */
+const PORT_COLORS: Record<string, { mid: string; base: string; text: string }> = {
+  forest:    { mid: '#177040', base: '#0e4a28', text: '#d4f5e0' },
+  pasture:   { mid: '#54a808', base: '#3a7000', text: '#e8f8c0' },
+  fields:    { mid: '#d4a010', base: '#906800', text: '#fff4b0' },
+  mountains: { mid: '#607898', base: '#3a5068', text: '#d8eaf8' },
+  hills:     { mid: '#c84020', base: '#882010', text: '#fde0d0' },
+  generic:   { mid: '#c8861c', base: '#7a4a08', text: '#fff0c8' }, // 3:1 amber
+};
+
+const PORT_ICONS: Record<string, string> = {
+  forest: '🌲', pasture: '🐑', fields: '🌾', mountains: '⛰', hills: '🧱',
+};
+
 function drawWaterHex(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
   size: number,
-  port?: Port
+  port?: Port,
+  /** angle in radians from this hex toward its adjacent land hex */
+  landAngle?: number,
 ) {
   const col = RESOURCE_COLORS.water;
   const corners = hexCorners(cx, cy, size);
 
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    if (i === 0) ctx.moveTo(corners[i].x, corners[i].y);
-    else ctx.lineTo(corners[i].x, corners[i].y);
+  function tracePoly(pts: { x: number; y: number }[]) {
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      if (i === 0) ctx.moveTo(pts[i].x, pts[i].y);
+      else ctx.lineTo(pts[i].x, pts[i].y);
+    }
+    ctx.closePath();
   }
-  ctx.closePath();
 
+  // ── Water base fill ─────────────────────────────────────────────────
+  tracePoly(corners);
   const grad = ctx.createRadialGradient(cx - size * 0.22, cy - size * 0.22, size * 0.08, cx, cy, size * 1.0);
   grad.addColorStop(0, col.light);
   grad.addColorStop(0.5, col.mid);
@@ -698,15 +718,9 @@ function drawWaterHex(
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Wave lines
+  // ── Wave lines ──────────────────────────────────────────────────────
   ctx.save();
-  const innerC = hexCorners(cx, cy, size * 0.85);
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    if (i === 0) ctx.moveTo(innerC[i].x, innerC[i].y);
-    else ctx.lineTo(innerC[i].x, innerC[i].y);
-  }
-  ctx.closePath();
+  tracePoly(hexCorners(cx, cy, size * 0.85));
   ctx.clip();
   ctx.strokeStyle = 'rgba(70,130,200,0.22)';
   ctx.lineWidth = Math.max(0.8, size * 0.028);
@@ -719,39 +733,123 @@ function drawWaterHex(
   }
   ctx.restore();
 
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    if (i === 0) ctx.moveTo(corners[i].x, corners[i].y);
-    else ctx.lineTo(corners[i].x, corners[i].y);
-  }
-  ctx.closePath();
+  // ── Hex border ──────────────────────────────────────────────────────
+  tracePoly(corners);
   ctx.strokeStyle = 'rgba(10,30,70,0.55)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  if (port) {
-    const badgeR = size * 0.32;
-    ctx.beginPath();
-    ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(20,12,5,0.85)';
-    ctx.fill();
-    ctx.strokeStyle = '#c4a050';
-    ctx.lineWidth = Math.max(1, size * 0.04);
-    ctx.stroke();
+  if (!port) return;
 
-    ctx.font = `bold ${Math.round(badgeR * 0.68)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#f0d080';
-    ctx.fillText(port.type, cx, cy - badgeR * 0.12);
-    if (port.resource) {
-      const icons: Record<string, string> = {
-        forest: '🌲', pasture: '🐑', fields: '🌾', mountains: '⛰', hills: '🧱',
-      };
-      ctx.font = `${Math.round(badgeR * 0.62)}px serif`;
-      ctx.fillText(icons[port.resource] || '?', cx, cy + badgeR * 0.48);
+  // ── Harbour rendering ───────────────────────────────────────────────
+  const pc = PORT_COLORS[port.resource ?? 'generic'];
+
+  // 1. Coloured directional wedge (shows which land tiles this port serves)
+  if (landAngle !== undefined) {
+    ctx.save();
+    tracePoly(hexCorners(cx, cy, size * 0.93));
+    ctx.clip();
+
+    const wedgeHalf = Math.PI / 5.8; // ≈ 31° each side → ~62° total ≈ one hex edge
+    const wLen = size * 0.86;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(
+      cx + Math.cos(landAngle - wedgeHalf) * wLen,
+      cy + Math.sin(landAngle - wedgeHalf) * wLen,
+    );
+    ctx.lineTo(
+      cx + Math.cos(landAngle + wedgeHalf) * wLen,
+      cy + Math.sin(landAngle + wedgeHalf) * wLen,
+    );
+    ctx.closePath();
+    ctx.fillStyle = pc.mid + '55'; // 33% opacity — subtle dock glow
+    ctx.fill();
+
+    // Cross-planks across the wedge
+    for (let p = 1; p <= 3; p++) {
+      const pd = size * 0.30 + p * size * 0.16;
+      ctx.beginPath();
+      ctx.moveTo(
+        cx + Math.cos(landAngle - wedgeHalf * 0.80) * pd,
+        cy + Math.sin(landAngle - wedgeHalf * 0.80) * pd,
+      );
+      ctx.lineTo(
+        cx + Math.cos(landAngle + wedgeHalf * 0.80) * pd,
+        cy + Math.sin(landAngle + wedgeHalf * 0.80) * pd,
+      );
+      ctx.strokeStyle = pc.base + 'aa';
+      ctx.lineWidth = Math.max(1.2, size * 0.028);
+      ctx.stroke();
     }
+    ctx.restore();
   }
+
+  // 2. Coloured outer ring — makes harbour hexes unmistakable
+  tracePoly(corners);
+  ctx.strokeStyle = pc.mid;
+  ctx.lineWidth = Math.max(2.5, size * 0.062);
+  ctx.stroke();
+  tracePoly(corners); // dark outer edge
+  ctx.strokeStyle = pc.base;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 3. Central badge ────────────────────────────────────────────────────
+  const badgeR = size * 0.335;
+
+  // Shadow
+  ctx.beginPath();
+  ctx.arc(cx, cy + size * 0.04, badgeR + 3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fill();
+
+  // Dark outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, badgeR + 3, 0, Math.PI * 2);
+  ctx.fillStyle = pc.base;
+  ctx.fill();
+
+  // Coloured face
+  ctx.beginPath();
+  ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
+  ctx.fillStyle = pc.mid;
+  ctx.fill();
+
+  // Radial highlight
+  const hl = ctx.createRadialGradient(cx - badgeR * 0.35, cy - badgeR * 0.35, 0, cx, cy, badgeR);
+  hl.addColorStop(0, 'rgba(255,255,255,0.28)');
+  hl.addColorStop(0.55, 'rgba(255,255,255,0.05)');
+  hl.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
+  ctx.fillStyle = hl;
+  ctx.fill();
+
+  // Text
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = pc.text;
+  ctx.shadowColor = 'rgba(0,0,0,0.65)';
+  ctx.shadowBlur = 3;
+
+  if (port.resource) {
+    // 2:1 port: ratio on upper half, resource icon on lower half
+    ctx.font = `bold ${Math.round(badgeR * 0.70)}px serif`;
+    ctx.fillText('2:1', cx, cy - badgeR * 0.20);
+    ctx.shadowBlur = 0;
+    ctx.font = `${Math.round(badgeR * 0.62)}px serif`;
+    ctx.fillText(PORT_ICONS[port.resource] || '?', cx, cy + badgeR * 0.46);
+  } else {
+    // 3:1 generic port: ratio + anchor symbol
+    ctx.font = `bold ${Math.round(badgeR * 0.70)}px serif`;
+    ctx.fillText('3:1', cx, cy - badgeR * 0.18);
+    ctx.shadowBlur = 0;
+    ctx.font = `${Math.round(badgeR * 0.54)}px serif`;
+    ctx.fillStyle = 'rgba(255,240,180,0.82)';
+    ctx.fillText('⚓', cx, cy + badgeR * 0.48);
+  }
+  ctx.shadowBlur = 0;
 }
 
 /* ── Main hex drawing ─────────────────────────────────────────────── */
@@ -897,10 +995,27 @@ export function renderBoard(canvas: HTMLCanvasElement, board: Board) {
     if (board.ports) {
       for (const p of board.ports) portMap.set(`${p.coord.q},${p.coord.r}`, p);
     }
+    // Build land set so we can find which direction each port faces
+    const landSet = new Set(board.tiles.map((t) => `${t.coord.q},${t.coord.r}`));
+
     for (const wh of board.waterHexes) {
       const { x, y } = axialToPixel(wh.q, wh.r, hexSize, origin);
       const port = portMap.get(`${wh.q},${wh.r}`);
-      drawWaterHex(ctx, x, y, hexSize, port);
+
+      let landAngle: number | undefined;
+      if (port) {
+        // Find the first land neighbour; the angle from water→land gives the dock direction
+        for (const dir of HEX_DIRS) {
+          const nb = { q: wh.q + dir.q, r: wh.r + dir.r };
+          if (landSet.has(`${nb.q},${nb.r}`)) {
+            const { x: nx, y: ny } = axialToPixel(nb.q, nb.r, hexSize, origin);
+            landAngle = Math.atan2(ny - y, nx - x);
+            break;
+          }
+        }
+      }
+
+      drawWaterHex(ctx, x, y, hexSize, port, landAngle);
     }
   }
 

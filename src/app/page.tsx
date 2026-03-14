@@ -25,6 +25,7 @@ export default function Home() {
   const [board, setBoard] = useState<Board | null>(null);
   const [boardKey, setBoardKey] = useState(0);
   const [status, setStatus] = useState('');
+  const [genError, setGenError] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const mode: GameMode = `${modeType}${players === '56' ? '56' : '4'}` as GameMode;
@@ -32,11 +33,19 @@ export default function Home() {
 
   function handleGenerate() {
     setStatus('Generating…');
+    setGenError('');
     startTransition(() => {
-      const b = generateBoard(mode, layout);
-      setBoard(b);
-      setBoardKey(k => k + 1);
-      setStatus(`${b.attempts.toLocaleString()} attempts evaluated`);
+      try {
+        const b = generateBoard(mode, layout);
+        setBoard(b);
+        setBoardKey(k => k + 1);
+        setStatus(`${b.attempts.toLocaleString()} attempts evaluated`);
+        setGenError('');
+      } catch (err) {
+        console.error('Board generation failed:', err);
+        setGenError('Generation failed — please try again');
+        setStatus('');
+      }
     });
   }
 
@@ -125,7 +134,8 @@ export default function Home() {
               ↺
             </button>
           </div>
-          {status && <p className="status-text" style={{ marginTop: 8 }}>{status}</p>}
+          {status && !genError && <p className="status-text" style={{ marginTop: 8 }}>{status}</p>}
+          {genError && <p className="status-text" style={{ marginTop: 8, color: 'var(--red)' }}>{genError}</p>}
         </div>
       </aside>
 
@@ -153,6 +163,32 @@ export default function Home() {
                     {RESOURCE_LABELS[r]}
                   </div>
                 ))}
+              </div>
+              <div className="legend" style={{ marginTop: 6 }}>
+                <div className="legend-item" style={{ opacity: 0.7, fontSize: '0.68rem' }}>
+                  <div className="legend-dot" style={{ background: '#c8861c', border: '1.5px solid #7a4a08' }} />
+                  ⚓ 3:1 Port
+                </div>
+                <div className="legend-item" style={{ opacity: 0.7, fontSize: '0.68rem' }}>
+                  <div className="legend-dot" style={{ background: '#177040', border: '1.5px solid #0e4a28' }} />
+                  🌲 2:1 Forest
+                </div>
+                <div className="legend-item" style={{ opacity: 0.7, fontSize: '0.68rem' }}>
+                  <div className="legend-dot" style={{ background: '#54a808', border: '1.5px solid #3a7000' }} />
+                  🐑 2:1 Pasture
+                </div>
+                <div className="legend-item" style={{ opacity: 0.7, fontSize: '0.68rem' }}>
+                  <div className="legend-dot" style={{ background: '#d4a010', border: '1.5px solid #906800' }} />
+                  🌾 2:1 Fields
+                </div>
+                <div className="legend-item" style={{ opacity: 0.7, fontSize: '0.68rem' }}>
+                  <div className="legend-dot" style={{ background: '#607898', border: '1.5px solid #3a5068' }} />
+                  ⛰ 2:1 Mountains
+                </div>
+                <div className="legend-item" style={{ opacity: 0.7, fontSize: '0.68rem' }}>
+                  <div className="legend-dot" style={{ background: '#c84020', border: '1.5px solid #882010' }} />
+                  🧱 2:1 Hills
+                </div>
               </div>
             </>
           ) : (
