@@ -61,7 +61,7 @@ function verdictLabel(score: number): { text: string; bg: string; color: string 
   if (score >= 85) return { text: 'Exceptional', bg: 'rgba(34,197,94,0.14)', color: '#22c55e' };
   if (score >= 70) return { text: 'Excellent', bg: 'rgba(34,197,94,0.10)', color: '#4ade80' };
   if (score >= 55) return { text: 'Decent', bg: 'rgba(245,158,11,0.12)', color: '#fbbf24' };
-  return { text: 'Try again', bg: 'rgba(239,68,68,0.12)', color: '#f87171' };
+  return { text: 'Fair', bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' };
 }
 
 function modeLabel(mode: string): string {
