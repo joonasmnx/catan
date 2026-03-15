@@ -25,7 +25,6 @@ export default function Home() {
   const [board, setBoard] = useState<Board | null>(null);
   const [boardKey, setBoardKey] = useState(0);
   const [status, setStatus] = useState('');
-  const [genError, setGenError] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const mode: GameMode = `${modeType}${players === '56' ? '56' : '4'}` as GameMode;
@@ -33,19 +32,11 @@ export default function Home() {
 
   function handleGenerate() {
     setStatus('Generating…');
-    setGenError('');
     startTransition(() => {
-      try {
-        const b = generateBoard(mode, layout);
-        setBoard(b);
-        setBoardKey(k => k + 1);
-        setStatus(`${b.attempts.toLocaleString()} attempts evaluated`);
-        setGenError('');
-      } catch (err) {
-        console.error('Board generation failed:', err);
-        setGenError('Generation failed — please try again');
-        setStatus('');
-      }
+      const b = generateBoard(mode, layout);
+      setBoard(b);
+      setBoardKey(k => k + 1);
+      setStatus(`${b.attempts.toLocaleString()} attempts evaluated`);
     });
   }
 
@@ -134,8 +125,7 @@ export default function Home() {
               ↺
             </button>
           </div>
-          {status && !genError && <p className="status-text" style={{ marginTop: 8 }}>{status}</p>}
-          {genError && <p className="status-text" style={{ marginTop: 8, color: 'var(--red)' }}>{genError}</p>}
+          {status && <p className="status-text" style={{ marginTop: 8 }}>{status}</p>}
         </div>
       </aside>
 

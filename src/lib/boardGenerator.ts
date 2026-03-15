@@ -245,12 +245,14 @@ function scoreIntersectionQuality(
   tiles: Tile[], coordList: HexCoord[], coordIndex: Record<string, number>
 ): number {
   const tileMap: Record<string, Tile> = {};
-  for (let i = 0; i < coordList.length; i++) {
+  // Use tiles.length (not coordList.length) — coordList may have more entries than tiles
+  // (e.g. standard56 has 31 land coords but only 30 tiles; the extra would be undefined)
+  for (let i = 0; i < tiles.length; i++) {
     tileMap[`${coordList[i].q},${coordList[i].r}`] = tiles[i];
   }
   const vertexSet = new Set<string>();
   const vertexTriplets: Tile[][] = [];
-  for (let i = 0; i < coordList.length; i++) {
+  for (let i = 0; i < tiles.length; i++) {
     const h = coordList[i];
     for (let d = 0; d < 6; d++) {
       const d1 = HEX_DIRS[d];
@@ -370,13 +372,15 @@ function computeCIBI(
 
 export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): Board {
   const isSeafarers = mode.includes('seafarers');
+  const is56 = mode.includes('56');
   const coordList = getLandCoords(mode, layout);
   const coordIndex: Record<string, number> = {};
   for (let i = 0; i < coordList.length; i++) {
     coordIndex[`${coordList[i].q},${coordList[i].r}`] = i;
   }
   const tilePool = buildTileList(TILE_COUNTS[mode]);
-  const MAX_ATTEMPTS = 4000;
+  // Scale attempts with board size — 56p boards are much harder to satisfy
+  const MAX_ATTEMPTS = is56 ? 8000 : 4000;
   let bestBoard: Board | null = null;
   let bestScore = -1;
   let attempts = 0;
@@ -423,9 +427,10 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
     }
   }
 
-  // ── Pass 3 (last resort): only resource constraint ───────────────────
+  // ── Pass 3 (if still nothing): only resource constraint, keep best ───
   if (!bestBoard) {
-    for (let attempt = 0; attempt < 2000; attempt++) {
+    const pass3Limit = is56 ? 4000 : 2000;
+    for (let attempt = 0; attempt < pass3Limit; attempt++) {
       attempts++;
       const resources = shuffle(tilePool);
       const tilesSoFar: Tile[] = resources.map((res, i) => ({
@@ -436,9 +441,26 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
       if (!checkNoAdjacentSameResource(tilesSoFar, coordIndex)) continue;
       assignNumbersBalanced(tilesSoFar, mode);
       const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
-      bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
-      break; // take the first resource-valid board
+      if (cibi.total > bestScore) {
+        bestScore = cibi.total;
+        bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
+      }
     }
+  }
+
+  // ── Absolute fallback: take any arrangement, no constraints ─────────
+  // Guarantees we always return a board and never throw.
+  if (!bestBoard) {
+    attempts++;
+    const resources = shuffle(tilePool);
+    const tilesSoFar: Tile[] = resources.map((res, i) => ({
+      resource: res as Tile['resource'],
+      number: null,
+      coord: coordList[i],
+    }));
+    assignNumbersBalanced(tilesSoFar, mode);
+    const cibi = computeCIBI(tilesSoFar, coordList, coordIndex);
+    bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
   }
 
   // ── Water ring + harbour placement ──────────────────────────────────
@@ -485,12 +507,8 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
       .map((p, i) => ({ ...p, coord: fixedCoords[i] } as Port));
   }
 
-  if (bestBoard) {
-    bestBoard.waterHexes = waterHexes;
-    bestBoard.ports = ports;
-  }
-
-  // bestBoard is guaranteed non-null: pass 3 always produces at least one board
-  if (!bestBoard) throw new Error('Board generation failed after all passes');
-  return bestBoard;
+  // bestBoard is guaranteed non-null due to the absolute fallback above
+  bestBoard!.waterHexes = waterHexes;
+  bestBoard!.ports = ports;
+  return bestBoard!;
 }
