@@ -48,18 +48,19 @@ const FIXED_PORTS_4P: Array<{ coord: HexCoord; type: '2:1' | '3:1'; resource: ty
 ];
 
 // Standard 5-6 player: 11 harbours (5 generic 3:1 + 6 resource 2:1: wool×2, + 1 each of the rest).
+// Positions and types read from the physical 5-6 player extension board frame photo.
 const FIXED_PORTS_56P: Array<{ coord: HexCoord; type: '2:1' | '3:1'; resource: typeof R.FOREST | typeof R.PASTURE | typeof R.FIELDS | typeof R.MOUNTAINS | typeof R.HILLS | null }> = [
   { coord: { q: -4, r:  1 }, type: '3:1', resource: null },           // W   — generic
-  { coord: { q: -3, r: -1 }, type: '2:1', resource: R.FOREST },       // WNW — wood
+  { coord: { q: -3, r: -1 }, type: '2:1', resource: R.PASTURE },      // WNW — wool
   { coord: { q: -1, r: -3 }, type: '3:1', resource: null },           // NNW — generic
-  { coord: { q:  1, r: -4 }, type: '2:1', resource: R.PASTURE },      // N   — wool
+  { coord: { q:  1, r: -4 }, type: '2:1', resource: R.FIELDS },       // N   — grain  ← photo: circled harbour top
   { coord: { q:  3, r: -4 }, type: '3:1', resource: null },           // NNE — generic
   { coord: { q:  4, r: -3 }, type: '2:1', resource: R.MOUNTAINS },    // NE  — ore
-  { coord: { q:  4, r: -1 }, type: '3:1', resource: null },           // ENE — generic
-  { coord: { q:  3, r:  1 }, type: '2:1', resource: R.FIELDS },       // E   — grain
+  { coord: { q:  4, r: -1 }, type: '3:1', resource: null },           // E   — generic
+  { coord: { q:  3, r:  1 }, type: '2:1', resource: R.PASTURE },      // SE  — wool (×2)
   { coord: { q:  1, r:  3 }, type: '3:1', resource: null },           // SSE — generic
-  { coord: { q: -1, r:  4 }, type: '2:1', resource: R.HILLS },        // S   — brick
-  { coord: { q: -3, r:  4 }, type: '2:1', resource: R.PASTURE },      // SSW — wool (×2)
+  { coord: { q: -1, r:  4 }, type: '2:1', resource: R.FOREST },       // S   — lumber
+  { coord: { q: -3, r:  4 }, type: '2:1', resource: R.HILLS },        // SW  — brick
 ];
 
 const FIXED_PORTS: Record<string, typeof FIXED_PORTS_4P> = {
