@@ -57,11 +57,11 @@ function barColor(v: number): string {
   return '#ef4444';
 }
 
-function verdictLabel(score: number): { text: string; bg: string; color: string } {
+function verdictLabel(score: number): { text: string; bg: string; color: string } | null {
   if (score >= 85) return { text: 'Exceptional', bg: 'rgba(34,197,94,0.14)', color: '#22c55e' };
   if (score >= 70) return { text: 'Excellent', bg: 'rgba(34,197,94,0.10)', color: '#4ade80' };
   if (score >= 55) return { text: 'Decent', bg: 'rgba(245,158,11,0.12)', color: '#fbbf24' };
-  return { text: 'Fair', bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' };
+  return null; // no badge shown for lower scores — a playable board is always shown without judgement
 }
 
 function modeLabel(mode: string): string {

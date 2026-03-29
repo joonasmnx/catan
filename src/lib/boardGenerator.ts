@@ -26,54 +26,50 @@ TILE_COUNTS.seafarers56 = TILE_COUNTS.standard56;
 const NUMBERS_4P = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
 const NUMBERS_56P = [2,2, 3,3,3, 4,4,4, 5,5,5, 6,6,6, 8,8,8, 9,9,9, 10,10,10, 11,11,11, 12,12];
 
-// ── Fixed harbour positions for Standard boards ─────────────────────
+// ── Fixed harbour definitions for Standard boards ────────────────────
 //
-// In the physical Catan game the board frame is fixed; only tile arrangement
-// and harbour TYPES vary.  We mirror that here:
-//   • Standard modes  → fixed water-hex coordinates, shuffled types
-//   • Seafarers modes → random placement (island shape varies per layout)
+// On the physical Catan board frame BOTH the position and the type of each
+// harbour are printed — they never change between games.  Only the resource
+// tiles and number tokens are randomised.
 //
-// Standard 4-player (hexRing radius 3 = 18 water hexes).
-// Harbours are at every other hex — the alternating "even-index" positions —
-// exactly matching the physical base-game frame (9 of 18).
-// Sorted clockwise from SW, angular spacing ≈ 20° each.
-const STANDARD_4P_PORTS: HexCoord[] = [
-  { q: -3, r:  3 },   // SW
-  { q: -1, r:  3 },   // S
-  { q:  1, r:  2 },   // SSE
-  { q:  3, r:  0 },   // E
-  { q:  3, r: -2 },   // NNE
-  { q:  2, r: -3 },   // NE
-  { q:  0, r: -3 },   // N
-  { q: -2, r: -1 },   // NW
-  { q: -3, r:  1 },   // W
+// Standard 4-player: 9 harbours (4 generic 3:1 + 1 of each resource 2:1).
+// Positions are every-other water hex around ring 3 of the land disk.
+// Type assignments match the official Catan rulebook / JSettlers2 source.
+const FIXED_PORTS_4P: Array<{ coord: HexCoord; type: '2:1' | '3:1'; resource: typeof R.FOREST | typeof R.PASTURE | typeof R.FIELDS | typeof R.MOUNTAINS | typeof R.HILLS | null }> = [
+  { coord: { q: -3, r:  3 }, type: '3:1', resource: null },           // SW  — generic
+  { coord: { q: -1, r:  3 }, type: '2:1', resource: R.HILLS },        // S   — brick
+  { coord: { q:  1, r:  2 }, type: '3:1', resource: null },           // SSE — generic
+  { coord: { q:  3, r:  0 }, type: '2:1', resource: R.MOUNTAINS },    // E   — ore
+  { coord: { q:  3, r: -2 }, type: '3:1', resource: null },           // NNE — generic
+  { coord: { q:  2, r: -3 }, type: '2:1', resource: R.PASTURE },      // NE  — wool
+  { coord: { q:  0, r: -3 }, type: '2:1', resource: R.FIELDS },       // N   — grain
+  { coord: { q: -2, r: -1 }, type: '2:1', resource: R.FOREST },       // NW  — wood
+  { coord: { q: -3, r:  1 }, type: '3:1', resource: null },           // W   — generic
 ];
 
-// Standard 5-6 player (24 water hexes around the larger island).
-// 11 harbours at alternating even-index positions, angular spacing ≈ 28-32°.
-// The small ~60° gap in the SW arc matches the concave corner geometry of
-// the 5-6p island (where two r-3 corner tiles were removed from land).
-const STANDARD_56P_PORTS: HexCoord[] = [
-  { q: -4, r:  1 },   // W
-  { q: -3, r: -1 },   // WNW
-  { q: -1, r: -3 },   // NNW
-  { q:  1, r: -4 },   // N
-  { q:  3, r: -4 },   // NNE
-  { q:  4, r: -3 },   // NE
-  { q:  4, r: -1 },   // ENE
-  { q:  3, r:  1 },   // E
-  { q:  1, r:  3 },   // SSE
-  { q: -1, r:  4 },   // S
-  { q: -3, r:  4 },   // SSW
+// Standard 5-6 player: 11 harbours (5 generic 3:1 + 6 resource 2:1: wool×2, + 1 each of the rest).
+const FIXED_PORTS_56P: Array<{ coord: HexCoord; type: '2:1' | '3:1'; resource: typeof R.FOREST | typeof R.PASTURE | typeof R.FIELDS | typeof R.MOUNTAINS | typeof R.HILLS | null }> = [
+  { coord: { q: -4, r:  1 }, type: '3:1', resource: null },           // W   — generic
+  { coord: { q: -3, r: -1 }, type: '2:1', resource: R.FOREST },       // WNW — wood
+  { coord: { q: -1, r: -3 }, type: '3:1', resource: null },           // NNW — generic
+  { coord: { q:  1, r: -4 }, type: '2:1', resource: R.PASTURE },      // N   — wool
+  { coord: { q:  3, r: -4 }, type: '3:1', resource: null },           // NNE — generic
+  { coord: { q:  4, r: -3 }, type: '2:1', resource: R.MOUNTAINS },    // NE  — ore
+  { coord: { q:  4, r: -1 }, type: '3:1', resource: null },           // ENE — generic
+  { coord: { q:  3, r:  1 }, type: '2:1', resource: R.FIELDS },       // E   — grain
+  { coord: { q:  1, r:  3 }, type: '3:1', resource: null },           // SSE — generic
+  { coord: { q: -1, r:  4 }, type: '2:1', resource: R.HILLS },        // S   — brick
+  { coord: { q: -3, r:  4 }, type: '2:1', resource: R.PASTURE },      // SSW — wool (×2)
 ];
 
-const STANDARD_PORT_HEXES: Record<string, HexCoord[]> = {
-  standard4:  STANDARD_4P_PORTS,
-  standard56: STANDARD_56P_PORTS,
+const FIXED_PORTS: Record<string, typeof FIXED_PORTS_4P> = {
+  standard4:  FIXED_PORTS_4P,
+  standard56: FIXED_PORTS_56P,
 };
 
+// Seafarers port type pools (positions are random per layout, but type composition is fixed)
 const PORTS: Record<string, Array<{ type: '2:1' | '3:1'; resource: typeof R.FOREST | typeof R.PASTURE | typeof R.FIELDS | typeof R.MOUNTAINS | typeof R.HILLS | null }>> = {
-  standard4: [
+  seafarers4: [
     { type: '2:1', resource: R.FOREST },
     { type: '2:1', resource: R.PASTURE },
     { type: '2:1', resource: R.FIELDS },
@@ -84,7 +80,7 @@ const PORTS: Record<string, Array<{ type: '2:1' | '3:1'; resource: typeof R.FORE
     { type: '3:1', resource: null },
     { type: '3:1', resource: null },
   ],
-  standard56: [
+  seafarers56: [
     { type: '2:1', resource: R.FOREST },
     { type: '2:1', resource: R.PASTURE },
     { type: '2:1', resource: R.PASTURE },  // Sheep ×2 per official 5-6p rules
@@ -98,8 +94,6 @@ const PORTS: Record<string, Array<{ type: '2:1' | '3:1'; resource: typeof R.FORE
     { type: '3:1', resource: null },
   ],
 };
-PORTS.seafarers4 = PORTS.standard4;
-PORTS.seafarers56 = PORTS.standard56;
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -380,7 +374,10 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
   }
   const tilePool = buildTileList(TILE_COUNTS[mode]);
   // Scale attempts with board size — 56p boards are much harder to satisfy
-  const MAX_ATTEMPTS = is56 ? 8000 : 4000;
+  // Minimum acceptable CIBI before we stop searching (quality gate).
+  // Larger boards are harder to optimise so the bar is slightly lower for 56p.
+  const CIBI_THRESHOLD = is56 ? 65 : 70;
+  const MAX_ATTEMPTS = is56 ? 10000 : 5000;
   let bestBoard: Board | null = null;
   let bestScore = -1;
   let attempts = 0;
@@ -403,11 +400,12 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
     if (cibi.total > bestScore) {
       bestScore = cibi.total;
       bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
+      if (bestScore >= CIBI_THRESHOLD) break; // threshold met — stop searching
     }
   }
 
   // ── Pass 2 (if pass 1 found nothing): relax same-number constraint ──
-  if (!bestBoard) {
+  if (!bestBoard || bestScore < CIBI_THRESHOLD) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       attempts++;
       const resources = shuffle(tilePool);
@@ -423,6 +421,7 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
       if (cibi.total > bestScore) {
         bestScore = cibi.total;
         bestBoard = { tiles: tilesSoFar.map(t => ({ ...t })), coordList, coordIndex, cibi, attempts };
+        if (bestScore >= CIBI_THRESHOLD) break;
       }
     }
   }
@@ -465,11 +464,11 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
 
   // ── Water ring + harbour placement ──────────────────────────────────
   const waterHexes = waterCoords(coordList);
-  const portTypeList = shuffle([...PORTS[mode]]);
   let ports: Port[];
 
   if (isSeafarers) {
     // Seafarers: random placement — island shape differs per layout
+    const portTypeList = shuffle([...PORTS[mode]]);
     const landSet = new Set(coordList.map((h) => `${h.q},${h.r}`));
     const portCandidates = waterHexes.filter((w) =>
       hexNeighbors(w).some((n) => landSet.has(`${n.q},${n.r}`))
@@ -500,11 +499,8 @@ export function generateBoard(mode: GameMode, layout: LayoutType = 'classic'): B
       }
     }
   } else {
-    // Standard: fixed frame positions (identical every game), randomised types
-    const fixedCoords = STANDARD_PORT_HEXES[mode] ?? [];
-    ports = portTypeList
-      .slice(0, fixedCoords.length)
-      .map((p, i) => ({ ...p, coord: fixedCoords[i] } as Port));
+    // Standard: fully fixed frame — both position AND type are identical every game
+    ports = (FIXED_PORTS[mode] ?? []).map(p => ({ ...p } as Port));
   }
 
   // bestBoard is guaranteed non-null due to the absolute fallback above
