@@ -2,3 +2,6 @@
 node_modules/
 .env*.local
 *.tsbuildinfo
+
+# design-taste skill working files (screenshots, reports)
+.taste-skill/
