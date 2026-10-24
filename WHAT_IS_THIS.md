@@ -1,54 +1,64 @@
-# What Is This?
+# Fair board for Catan
 
-This is a tool that creates a random game board for the board game **Catan** — and makes sure the board is *fair*.
+One static web page. Pick **4 players** or **5–6 players**, press **Generate**, get a fair board.
+Every board has a code in the link (`?b=4-7K2QM9X`); anyone who opens the link sees the exact
+same board, on any device, even offline. No server, no database, no login.
 
----
+## How a board is made
 
-## The Problem It Solves
+1. **The board is a graph.** Hexes in axial coordinates (rows 3-4-5-4-3, or 3-4-5-6-5-4-3),
+   edges between touching hexes, vertices where hexes meet (54 / 80), the coast and harbours.
+2. **Official pieces.** 4 players: 19 hexes (4 forest, 4 pasture, 4 fields, 3 hills, 3 mountains,
+   1 desert), 18 numbers, 9 harbours. 5–6 players: 30 hexes (6, 6, 6, 5, 5, 2 deserts), 28 numbers
+   (two each of 2 and 12, three of the rest), 11 harbours. Source: the 5–6 Player Extension
+   rulebook's component list (the extension adds 11 hexes and 2 harbours to the base game).
+3. **Hard rules, valid by construction.** A seeded PRNG (xoshiro128\*\*) drives randomised
+   backtracking: deserts are placed uniformly at random, then terrain and numbers are placed hex by
+   hex, never breaking: no touching same resource, no touching 6/8, no touching equal numbers.
+4. **Balance by maths.** `pips(n) = 6 − |7 − n|`, `P(n) = pips/36`. The score (lower is fairer):
+   - **start spots, 40%:** simulate the setup draft (each pick takes the best free corner under the
+     distance rule; a corner's value is its pips plus one per different resource) and take
+     first pick − last pick;
+   - **production, 35%:** most − least produced resource, in pips;
+   - **high numbers, 25%:** touching pairs of 5, 6, 8, 9.
 
-In Catan, players build settlements and collect resources (wood, wool, grain, ore, brick). The board is made of hexagonal tiles, each producing a different resource. A dice roll determines which tiles produce on any given turn.
+   Each term is divided by its standard deviation on random valid boards, so the shares mean what
+   they say. Then 12,000 (or 16,000) swaps of tiles and numbers are tried with threshold accepting,
+   a simulated-annealing variant with no `Math.exp`: all arithmetic is integer, so a code gives the
+   same board in every browser.
+5. **Proven by tests.** See `reports/REPORT.md`: 10,000 seeds per mode, zero violations, zero
+   repeats, chi-square tests on randomness, score distributions.
 
-If you just randomly throw tiles and numbers together, you often end up with an unfair board:
-- All the good numbers clumped in one corner
-- The same resource repeated side by side
-- One player sitting on terrible spots while another has everything
+## Why "same resource two apart" is not in the score
 
-This tool fixes that by generating thousands of random boards and picking the most balanced one.
+Any weight on it (tested down to 2%) pushed brick and ore into the inner ring on up to 39% of boards
+against 32% expected, because four-tile resources spread out most easily along the coast. Randomness
+of position won; the no-touching rule already keeps same resources apart, and the page shows the count.
 
----
+## Commands
 
-## What It Actually Does (Plain English)
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Local dev server |
+| `npm run build` | Type-check and build the static site into `dist/` |
+| `npm run test:unit` | Fast unit tests |
+| `npm test` | Unit tests plus the 10,000-seed property tests (about 5 minutes) |
+| `npm run test:e2e` | Playwright at 320, 390, 768 and 1440 px |
+| `npm run report` | Rewrite `reports/REPORT.md` from the last property run |
+| `npm run lint` | ESLint and TypeScript |
 
-1. You pick a game mode (4 players or 5–6 players, regular or Seafarers with water tiles)
-2. You click **Generate Board**
-3. Behind the scenes it tries up to **2,000 random arrangements**
-4. For each arrangement it checks some basic rules:
-   - The same resource (e.g. Forest) can't be right next to another Forest
-   - The two most rolled numbers (6 and 8, shown in red) can't be next to each other
-   - Two identical numbers can't be neighbours either
-5. Every arrangement that passes those rules gets a **balance score out of 100**
-6. The one with the highest score gets drawn on screen
+## Files
 
----
+| Path | Purpose |
+| --- | --- |
+| `src/lib/` | All logic, pure functions: `geometry`, `components`, `prng`, `solver`, `rules`, `score`, `optimise`, `board` |
+| `src/ui/board-svg.ts` | Draws a board as SVG |
+| `src/main.ts` | The page: URL codes, share, save image, print |
+| `vite.config.ts` | Build, plus the generated offline service worker |
+| `tests/` | Unit, property and e2e tests |
 
-## What the Balance Score Measures
+## Changing the algorithm
 
-The score looks at five things:
-
-- **Are all resources equally productive?** — ideally each resource type gets roughly the same number of good dice rolls
-- **Are the settlement spots good?** — every corner where 3 tiles meet should ideally have 3 different resources and decent numbers
-- **Are same resources spread out?** — you don't want all the Forest tiles bunched together in one area
-- **Are the 6s and 8s far apart?** — these are the most rolled numbers; spreading them gives more players access to them
-- **Is the desert out of the way?** — the desert produces nothing, so it's best placed at the edge
-
----
-
-## The End Result
-
-You get a colourful hex board on screen with:
-- Each tile coloured by resource type (dark green = forest, gold = fields, red-brown = hills, etc.)
-- Circular number tokens on each tile showing which dice roll activates it
-- Dots (pips) under each number showing how often it statistically rolls
-- A score panel on the right showing how balanced the board is
-
-If the score is low, just click Generate again — it'll try a fresh batch of 2,000.
+A board code is a seed. If the solver, score or budget changes, old links show different boards.
+The snapshot test in `tests/unit/board.test.ts` fails when that happens; if the change is
+intentional, add a version letter to new codes rather than silently breaking old links.

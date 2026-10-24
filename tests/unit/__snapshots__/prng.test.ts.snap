@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`prng > keeps a fixed stream (shared links depend on it) 1`] = `
+[
+  2442144158,
+  3238099751,
+  3819917871,
+  2104621829,
+]
+`;
