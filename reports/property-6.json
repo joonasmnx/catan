@@ -1,0 +1,58 @@
+{
+  "mode": "6",
+  "seeds": 10000,
+  "msPerBoard": 25.5856083529,
+  "violationCount": 0,
+  "badBoards": 0,
+  "unique": 10000,
+  "worseThanStart": 0,
+  "desert": {
+    "chi": 22.246000000000006,
+    "df": 29,
+    "p": 0.8098627232449195
+  },
+  "exchangeability": {
+    "chi": 241.43174948044367,
+    "df": 240,
+    "p": 0.46190298999920176,
+    "minP": 0.0007325536491508133,
+    "tests": 210
+  },
+  "countTest": {
+    "positions": 30,
+    "minP": 1.3346764626831487e-7,
+    "significantAt001": 3,
+    "maxDev": 0.015733333333333325,
+    "maxDevAt": "hex 8, terrain 3"
+  },
+  "score": {
+    "random": {
+      "mean": 4347.446,
+      "median": 4352,
+      "p95": 5332,
+      "worst": 6582,
+      "best": 1820
+    },
+    "optimised": {
+      "mean": 1211.234,
+      "median": 1188,
+      "p95": 1670,
+      "worst": 2270,
+      "best": 406
+    }
+  },
+  "metricMeans": {
+    "random": {
+      "startSpread": 4.3559,
+      "productionSpread": 9.2587,
+      "hotPairs": 8.4432,
+      "sameResourceNear": 24.1503
+    },
+    "optimised": {
+      "startSpread": 1.007,
+      "productionSpread": 1.0225,
+      "hotPairs": 4.1165,
+      "sameResourceNear": 23.6456
+    }
+  }
+}

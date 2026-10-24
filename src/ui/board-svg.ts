@@ -5,7 +5,7 @@ import { geometry, hexCentre, latticeToPixel } from '../lib/geometry';
 import type { Board } from '../lib/board';
 
 const SIZE = 50; // hex circumradius in SVG units
-const FRAME = 46; // sea beyond the outermost land corner
+const FRAME = 52; // sea beyond the outermost land corner
 
 export const TERRAIN_NAME: Record<Terrain, string> = {
   forest: 'Wood',
@@ -50,12 +50,12 @@ const SVG_CSS = [
   `.tile-name{font-size:12px;font-weight:500}`,
   `.ink-dark{fill:#1b1b16}.ink-light{fill:#ffffff}`,
   `.token{fill:#f7efd9}`,
-  `.token-n{font-size:19px;font-weight:600;fill:#1b1b16}.token-n.red{fill:#b3261e}`,
+  `.token-n{font-size:21px;font-weight:600;fill:#1b1b16}.token-n.red{fill:#b3261e}`,
   `.pip{fill:#1b1b16}.pip.red{fill:#b3261e}`,
   `.pier{fill:none;stroke:#efe6cf;stroke-width:3;stroke-linejoin:round}`,
-  `.port-ratio{font-size:11px;font-weight:600}.port-name{font-size:8.5px;font-weight:500}`,
+  `.port-ratio{font-size:15px;font-weight:600}.port-name{font-size:11px;font-weight:500}`,
   `.spot-disc{stroke:#111111;stroke-width:2.5}.spot-best .spot-disc{fill:#111111}.spot-worst .spot-disc{fill:#ffffff}`,
-  `.spot-n{font-size:11px;font-weight:600}.spot-best .spot-n{fill:#ffffff}.spot-worst .spot-n{fill:#111111}`,
+  `.spot-n{font-size:12px;font-weight:600}.spot-best .spot-n{fill:#ffffff}.spot-worst .spot-n{fill:#111111}`,
   `.caption{font-size:16px;font-weight:500;fill:#1b1b16}`,
 ].join('');
 
@@ -107,18 +107,18 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     const [a, b] = port.vertices.map((v) => px(...geo.vertexXY[v]));
     const [lx, ly] = px(...hexCentre(geo.hexes[port.hex]));
     const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
-    const bx = mx + (mx - lx) * 0.62, by = my + (my - ly) * 0.62;
+    const bx = mx + (mx - lx) * 0.7, by = my + (my - ly) * 0.7;
     out.push(
       `<path d="M${f(a[0])},${f(a[1])}L${f(bx)},${f(by)}L${f(b[0])},${f(b[1])}" class="pier"/>`,
     );
     const cls = port.resource ? `t-${port.resource}` : 't-generic';
     out.push(`<g class="port" transform="translate(${f(bx)},${f(by)})">`);
-    out.push(`<circle r="17" class="${cls} port-disc"/>`);
+    out.push(`<circle r="22" class="${cls} port-disc"/>`);
     if (port.resource) {
-      out.push(`<text y="-1" class="port-ratio ${inkClass(port.resource)}">2:1</text>`);
-      out.push(`<text y="10" class="port-name ${inkClass(port.resource)}">${TERRAIN_NAME[port.resource]}</text>`);
+      out.push(`<text y="0" class="port-ratio named ${inkClass(port.resource)}">2:1</text>`);
+      out.push(`<text y="12" class="port-name ${inkClass(port.resource)}">${TERRAIN_NAME[port.resource]}</text>`);
     } else {
-      out.push(`<text y="4.5" class="port-ratio ink-dark">3:1</text>`);
+      out.push(`<text y="5" class="port-ratio ink-dark">3:1</text>`);
     }
     out.push(`</g>`);
   }
@@ -129,17 +129,17 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     const t = TERRAINS[terrain[i]];
     out.push(`<polygon points="${hexPoints(X, Y, 1.5)}" class="t-${t} tile"/>`);
     out.push(
-      `<text x="${f(cx)}" y="${f(cy - 24)}" class="tile-name ${inkClass(t)}">${TERRAIN_NAME[t]}</text>`,
+      `<text x="${f(cx)}" y="${f(cy - 27)}" class="tile-name ${inkClass(t)}">${TERRAIN_NAME[t]}</text>`,
     );
     if (terrain[i] !== DESERT) {
       const n = token[i];
       const red = isRed(n) ? ' red' : '';
-      out.push(`<circle cx="${f(cx)}" cy="${f(cy + 4)}" r="20" class="token"/>`);
-      out.push(`<text x="${f(cx)}" y="${f(cy + 9)}" class="token-n${red}">${n}</text>`);
+      out.push(`<circle cx="${f(cx)}" cy="${f(cy + 4)}" r="23" class="token"/>`);
+      out.push(`<text x="${f(cx)}" y="${f(cy + 10.5)}" class="token-n${red}">${n}</text>`);
       const k = pips(n);
       for (let d = 0; d < k; d++) {
-        const dx = (d - (k - 1) / 2) * 4.6;
-        out.push(`<circle cx="${f(cx + dx)}" cy="${f(cy + 16.5)}" r="1.7" class="pip${red}"/>`);
+        const dx = (d - (k - 1) / 2) * 5;
+        out.push(`<circle cx="${f(cx + dx)}" cy="${f(cy + 19)}" r="1.9" class="pip${red}"/>`);
       }
     }
   });
@@ -153,7 +153,7 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
   for (const [v, label, cls] of marks) {
     const [x, y] = px(...geo.vertexXY[v]);
     out.push(`<g class="${cls}" transform="translate(${f(x)},${f(y)})">`);
-    out.push(`<circle r="10.5" class="spot-disc"/><text y="4" class="spot-n">${label}</text></g>`);
+    out.push(`<circle r="11" class="spot-disc"/><text y="4.3" class="spot-n">${label}</text></g>`);
   }
 
   if (opts.caption) {

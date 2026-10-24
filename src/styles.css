@@ -42,6 +42,9 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, p, figure, ul, ol { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+button, label { -webkit-tap-highlight-color: transparent; }
 ul, ol { padding: 0; list-style: none; }
 svg { display: block; max-width: 100%; }
 button, input { font: inherit; color: inherit; }
@@ -57,14 +60,14 @@ button, input { font: inherit; color: inherit; }
 
 /* ---------- shell ---------- */
 .topbar {
-  max-width: 1200px; margin: 0 auto; padding: 0 var(--pad);
-  height: 56px; display: flex; align-items: center;
+  max-width: 1200px; margin: 0 auto; padding: env(safe-area-inset-top) max(var(--pad), env(safe-area-inset-right)) 0 max(var(--pad), env(safe-area-inset-left));
+  height: 56px; box-sizing: content-box; display: flex; align-items: center;
 }
 .wordmark { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; }
 .mark { width: 20px; height: 20px; }
 .mark polygon { fill: var(--text); }
 
-.canvas { max-width: 1200px; margin: 0 auto; padding: 0 var(--pad) 48px; }
+.canvas { max-width: 1200px; margin: 0 auto; padding: 0 max(var(--pad), env(safe-area-inset-right)) 48px max(var(--pad), env(safe-area-inset-left)); }
 
 .title-row {
   display: flex; align-items: flex-end; justify-content: space-between;
@@ -79,7 +82,7 @@ h1 { font-size: var(--fs-title); line-height: 32px; font-weight: 600; letter-spa
   display: flex; margin: 0; padding: 2px; border: 0; min-width: 0;
   background: var(--raised); border-radius: var(--radius-control);
 }
-.segmented label { position: relative; cursor: pointer; }
+.segmented label { position: relative; cursor: pointer; touch-action: manipulation; }
 .segmented input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .segmented span {
   display: flex; align-items: center; justify-content: center;
@@ -107,11 +110,22 @@ h1 { font-size: var(--fs-title); line-height: 32px; font-weight: 600; letter-spa
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--card-pad); min-width: 0; }
 
 .board-panel { position: sticky; top: var(--gap); }
-.board { display: flex; justify-content: center; outline: none; }
+.board { display: flex; justify-content: center; scroll-margin-top: 12px; }
+.board:focus { outline: none; }
+.board:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
 .board-svg { width: 100%; height: auto; max-height: calc(100svh - 230px); min-height: 280px; }
 .board { container-type: inline-size; }
-/* At phone width the 5–6 board's tile names fall under 7px: colour and the legend carry them. */
-@container (max-width: 460px) { .board-6 .tile-name { display: none; } }
+/* A narrow board is its own composition: names would render under 11px, so
+   colour and the production legend carry them; numbers, harbour ratios and
+   the start-spot ranks grow so they stay at 11px or more at 390px. */
+@container (max-width: 600px) {
+  .board-svg .tile-name, .board-svg .port-name { display: none; }
+  .board-svg .token-n { font-size: 25px; transform: translateY(1px); }
+  .board-svg .port-ratio { font-size: 20px; transform: translateY(2px); }
+  .board-svg .port-ratio.named { transform: translateY(7px); }
+  .board-svg .spot-disc { r: 15px; }
+  .board-svg .spot-n { font-size: 20px; transform: translateY(2.5px); }
+}
 
 .board-foot {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
@@ -158,7 +172,7 @@ h1 { font-size: var(--fs-title); line-height: 32px; font-weight: 600; letter-spa
   background: var(--raised); font-weight: 500;
 }
 .picks li:first-child { background: #111111; color: #fff; }
-.picks li:last-child { background: #fff; box-shadow: inset 0 0 0 2.5px #111111; }
+.picks li:last-child { background: #fff; border: 2.5px solid #111111; }
 
 .checks { margin-top: 12px; display: grid; gap: 8px; }
 .checks li { display: flex; gap: 10px; align-items: baseline; }
@@ -168,7 +182,7 @@ h1 { font-size: var(--fs-title); line-height: 32px; font-weight: 600; letter-spa
 .mark-ok { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
 .mark-bad { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
 
-.foot { max-width: 1200px; margin: 0 auto; padding: 0 var(--pad) 40px; color: var(--muted); font-size: 13px; }
+.foot { max-width: 1200px; margin: 0 auto; padding: 0 max(var(--pad), env(safe-area-inset-right)) max(40px, env(safe-area-inset-bottom)) max(var(--pad), env(safe-area-inset-left)); color: var(--muted); font-size: 13px; }
 .code { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
 
 /* ---------- tablet and phone ---------- */

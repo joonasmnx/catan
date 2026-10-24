@@ -9,7 +9,7 @@ import { boardRows, boardSvg, TERRAIN_NAME, TILE_COLOURS } from './ui/board-svg'
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const els = {
-  title: $('title'),
+  code: $('code'),
   finding: $('finding'),
   controls: $<HTMLFormElement>('controls'),
   board: $('board'),
@@ -47,7 +47,7 @@ function show(board: Board, push: boolean) {
   if (radio) radio.checked = true;
 
   document.title = `Board ${code} · Fair Catan board`;
-  els.title.textContent = `Board ${code}`;
+  els.code.textContent = code;
   els.board.innerHTML = boardSvg(board);
   els.rows.innerHTML = boardRows(board).map((r) => `<li>${r}</li>`).join('');
   renderBalance(board);
@@ -61,11 +61,11 @@ function renderBalance(b: Board) {
 
   els.finding.textContent =
     `Every resource pays ${lo === hi ? lo : `${lo}–${hi}`} of 36 rolls. ` +
-    `The best and the ${ordinal(picks)} starting spot are ${plural(m.startSpread, 'pip')} apart.`;
+    `The first and the ${ordinal(picks)} starting pick are ${plural(m.startSpread, 'pip')} apart.`;
 
   els.method.textContent =
     `This board started as a random layout that already obeyed the three rules below. ` +
-    `Then ${BUDGET[b.mode].toLocaleString('en')} swaps of tiles and numbers were tried, ` +
+    `Then ${BUDGET[b.mode].toLocaleString('en-GB')} swaps of tiles and numbers were tried, ` +
     `and a swap was kept only if every rule still held and the board did not get much less fair. ` +
     `The fairest board seen is the one shown.`;
 
@@ -73,7 +73,7 @@ function renderBalance(b: Board) {
     `<tr><th scope="row">${label}</th><td class="num muted">${before}</td><td class="num">${after}</td></tr>`;
   els.compare.innerHTML =
     row('Gap between most and least produced resource, pips', s.productionSpread, m.productionSpread) +
-    row(`Gap between best and ${ordinal(picks)} starting spot`, s.startSpread, m.startSpread) +
+    row(`Gap between first and ${ordinal(picks)} starting pick`, s.startSpread, m.startSpread) +
     row('Touching pairs of high numbers (5, 6, 8, 9)', s.hotPairs, m.hotPairs) +
     row('Same-resource tiles two apart (shown, not scored)', s.sameResourceNear, m.sameResourceNear);
 

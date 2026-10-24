@@ -9,6 +9,7 @@
     "preview": "vite preview --port 4173 --strictPort",
     "lint": "eslint . && tsc --noEmit",
     "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test",
     "report": "tsx scripts/report.ts"
   },
