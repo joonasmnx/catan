@@ -21,7 +21,6 @@ const els = {
   picks: $('picks'),
   checks: $('checks'),
   status: $('status'),
-  lastPick: $('last-pick-label'),
 };
 
 let current: Board | null = null;
@@ -89,11 +88,10 @@ function renderBalance(b: Board) {
     </li>`;
   }).join('');
 
-  els.lastPick.textContent = `${ordinal(picks)} starting pick`;
   els.spots.textContent =
     `If each player in turn takes the best free corner (no two settlements next to each other), ` +
     `the first pick is worth ${m.draftValues[0]} and the ${ordinal(picks)} is worth ${m.draftValues[picks - 1]}. ` +
-    `A spot’s value is the pips of its tiles plus one per different resource. Both are marked on the board.`;
+    `A spot’s value is the pips of its tiles plus one per different resource.`;
   els.picks.innerHTML = m.draftValues.map((v) => `<li class="num">${v}</li>`).join('');
 
   const broken = new Set(violations(b.mode, b.layout).map((v) => v.kind));

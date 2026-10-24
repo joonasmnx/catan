@@ -45,7 +45,7 @@ describe('determinism', () => {
 });
 
 describe('svg', () => {
-  it.each(['4', '6'] as const)('draws every tile, token, harbour and both start spots (%s)', (mode) => {
+  it.each(['4', '6'] as const)('draws every tile, token and harbour, and no start-spot markers (%s)', (mode) => {
     const b = generate(mode, 3);
     const svg = boardSvg(b);
     const spec = MODES[mode];
@@ -53,7 +53,6 @@ describe('svg', () => {
     expect(svg.match(/class="token-n/g)!.length).toBe(spec.tokens.length);
     expect(svg.match(/class="token-n red"/g)!.length).toBe(spec.tokens.filter((t) => t === 6 || t === 8).length);
     expect(svg.match(/class="port"/g)!.length).toBe(spec.ports.length);
-    expect(svg).toContain('spot-best');
-    expect(svg).toContain('spot-worst');
+    expect(svg).not.toContain('spot-');
   });
 });

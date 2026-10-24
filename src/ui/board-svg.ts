@@ -54,8 +54,6 @@ const SVG_CSS = [
   `.pip{fill:#1b1b16}.pip.red{fill:#b3261e}`,
   `.pier{fill:none;stroke:#efe6cf;stroke-width:3;stroke-linejoin:round}`,
   `.port-ratio{font-size:15px;font-weight:600}.port-name{font-size:11px;font-weight:500}`,
-  `.spot-disc{stroke:#111111;stroke-width:2.5}.spot-best .spot-disc{fill:#111111}.spot-worst .spot-disc{fill:#ffffff}`,
-  `.spot-n{font-size:12px;font-weight:600}.spot-best .spot-n{fill:#ffffff}.spot-worst .spot-n{fill:#111111}`,
   `.caption{font-size:16px;font-weight:500;fill:#1b1b16}`,
 ].join('');
 
@@ -143,18 +141,6 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
       }
     }
   });
-
-  // Best and worst starting spot from the greedy setup draft.
-  const picks = board.metrics.draft;
-  const marks: [number, string, string][] = [
-    [picks[0], '1', 'spot-best'],
-    [picks[picks.length - 1], String(picks.length), 'spot-worst'],
-  ];
-  for (const [v, label, cls] of marks) {
-    const [x, y] = px(...geo.vertexXY[v]);
-    out.push(`<g class="${cls}" transform="translate(${f(x)},${f(y)})">`);
-    out.push(`<circle r="11" class="spot-disc"/><text y="4.3" class="spot-n">${label}</text></g>`);
-  }
 
   if (opts.caption) {
     out.push(
