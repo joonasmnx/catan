@@ -3,10 +3,10 @@
 import { DESERT, MODES, TERRAINS, isRed, pips, type Resource, type Terrain } from '../lib/components';
 import { geometry, hexCentre, latticeToPixel } from '../lib/geometry';
 import type { Board } from '../lib/board';
-import { tileArt } from './tile-art';
+import { boat, tileArt } from './tile-art';
 
 const SIZE = 50; // hex circumradius in SVG units
-const FRAME = 62; // sea beyond the outermost land corner
+const FRAME = 72; // sea beyond the outermost land corner
 
 export const TERRAIN_NAME: Record<Terrain, string> = {
   forest: 'Wood',
@@ -51,10 +51,11 @@ const SVG_CSS = [
   ...Object.entries(TILE_COLOURS).map(([k, v]) => `.t-${k}{fill:${v}}`),
   `.board-svg text{font-family:"Geist Variable",Geist,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;text-anchor:middle}`,
   `.frame{stroke:#2f80c2}`,
-  `.shallows{fill:#6fb3e0;stroke:#6fb3e0;stroke-width:16;stroke-linejoin:round}`,
+  `.shallows{fill:#7cc0ea;stroke:#7cc0ea;stroke-width:22;stroke-linejoin:round}`,
   `.beach{stroke:#ead9a6;stroke-width:7;stroke-linejoin:round}`,
   `.ink-dark{fill:#1b1b16}.ink-light{fill:#ffffff}`,
-  `.token{fill:#efd9a7;stroke:#3b2a14;stroke-width:1.6}`,
+  `.token{fill:url(#tokenShade);stroke:#3b2a14;stroke-width:1.6}.token-shadow{fill:#000000;opacity:.38}`,
+  `.tile-shade{fill:url(#tileShade)}`,
   `.token-n{font-size:23px;font-weight:700;fill:#1b1b16}.token-n.red{fill:#c62a1c}`,
   `.pip{fill:#1b1b16}.pip.red{fill:#c62a1c}`,
   `.pier{fill:none;stroke:#8a6a43;stroke-width:4;stroke-linecap:round}`,
@@ -103,11 +104,35 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
   );
   out.push(`<title id="board-title">${describe(board)}</title>`);
   out.push(`<style>${opts.fontCss ?? ''}${SVG_CSS}</style>`);
+  // Paint effects. `paint` roughens edges and mottles colour like gouache on
+  // board; `water` ripples the sea; `soft` feathers the shallows into it. The
+  // shading fills are the only gradients on the page, kept inside the picture.
+  out.push(
+    `<defs>` +
+      `<filter id="paint" filterUnits="userSpaceOnUse" x="${f(minX)}" y="${f(minY)}" width="${f(maxX - minX)}" height="${f(maxY - minY)}">` +
+      `<feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="4" seed="11" result="n"/>` +
+      `<feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
+      `<feColorMatrix in="n" type="matrix" values="0.34 0.34 0.34 0 0.5 0.34 0.34 0.34 0 0.5 0.34 0.34 0.34 0 0.5 0 0 0 0 1" result="g"/>` +
+      `<feBlend in="d" in2="g" mode="multiply" result="m"/><feComposite in="m" in2="d" operator="in"/></filter>` +
+      `<filter id="water" filterUnits="userSpaceOnUse" x="${f(minX)}" y="${f(minY)}" width="${f(maxX - minX)}" height="${f(maxY - minY)}">` +
+      `<feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="3" seed="4" result="n"/>` +
+      `<feColorMatrix in="n" type="matrix" values="0.3 0.3 0.3 0 0.62 0.3 0.3 0.3 0 0.62 0.3 0.3 0.3 0 0.62 0 0 0 0 1" result="g"/>` +
+      `<feBlend in="SourceGraphic" in2="g" mode="multiply" result="m"/><feComposite in="m" in2="SourceGraphic" operator="in"/></filter>` +
+      `<filter id="soft" filterUnits="userSpaceOnUse" x="${f(minX)}" y="${f(minY)}" width="${f(maxX - minX)}" height="${f(maxY - minY)}"><feGaussianBlur stdDeviation="5"/></filter>` +
+      `<radialGradient id="tileShade" cx="0.42" cy="0.38" r="0.62">` + // taste-skill-ignore
+      `<stop offset="0.55" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity="0.3"/></radialGradient>` + // taste-skill-ignore
+      `<radialGradient id="tokenShade" cx="0.38" cy="0.32" r="0.75">` + // taste-skill-ignore
+      `<stop offset="0" stop-color="#f8e8bd"/><stop offset="1" stop-color="#dcbd80"/></radialGradient>` + // taste-skill-ignore
+      `</defs>`,
+  );
   const hullPts = hull.map(([x, y]) => `${f(x)},${f(y)}`).join(' ');
-  out.push(`<polygon points="${hullPts}" class="t-sea frame" stroke-width="${FRAME * 2}" stroke-linejoin="round"/>`);
+  out.push(`<g filter="url(#water)"><polygon points="${hullPts}" class="t-sea frame" stroke-width="${FRAME * 2}" stroke-linejoin="round"/></g>`);
   // Shallow water, then the beach the tiles lie on.
+  out.push(`<g filter="url(#soft)">`);
   for (const h of geo.hexes) out.push(`<polygon points="${hexPoints(...hexCentre(h))}" class="shallows"/>`);
+  out.push(`</g><g filter="url(#paint)">`);
   for (const h of geo.hexes) out.push(`<polygon points="${hexPoints(...hexCentre(h))}" class="t-land beach"/>`);
+  out.push(`</g>`);
 
   // Harbours: two piers from the coast edge to a badge in the sea.
   for (const port of geo.ports) {
@@ -119,6 +144,9 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     const jetty = (p: number[]) => `M${f(p[0])},${f(p[1])}L${f(p[0] + (bx - p[0]) * 0.62)},${f(p[1] + (by - p[1]) * 0.62)}`;
     out.push(`<path d="${jetty(a)}${jetty(b)}" class="pier"/>`);
     const cls = port.resource ? `t-${port.resource}` : 't-generic';
+    // A boat moored beside the marker, on the side away from the board's centre line.
+    const side = bx >= 0 ? 1 : -1;
+    out.push(`<g transform="translate(${f(bx + side * 34)},${f(by + 6)}) scale(${side},1)">${boat()}</g>`);
     out.push(`<g class="port" transform="translate(${f(bx)},${f(by)})">`);
     out.push(`<circle r="22" class="${cls} port-disc"/>`);
     if (port.resource) {
@@ -130,6 +158,9 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     out.push(`</g>`);
   }
 
+  // Tiles: painted ground and scenery under one paint filter, then a shade
+  // that darkens each tile towards its rim.
+  out.push(`<g filter="url(#paint)">`);
   geo.hexes.forEach((h, i) => {
     const [X, Y] = hexCentre(h);
     const [cx, cy] = px(X, Y);
@@ -137,9 +168,16 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     out.push(`<clipPath id="hex${i}"><polygon points="${hexPoints(X, Y, 3)}"/></clipPath>`);
     out.push(`<polygon points="${hexPoints(X, Y, 3)}" class="t-${t} tile"/>`);
     out.push(`<g clip-path="url(#hex${i})"><g transform="translate(${f(cx)},${f(cy)})">${tileArt(t, i * 31 + terrain[i])}</g></g>`);
+  });
+  out.push(`</g>`);
+  for (const h of geo.hexes) out.push(`<polygon points="${hexPoints(...hexCentre(h), 3)}" class="tile-shade"/>`);
+
+  geo.hexes.forEach((h, i) => {
+    const [cx, cy] = px(...hexCentre(h));
     if (terrain[i] !== DESERT) {
       const n = token[i];
       const red = isRed(n) ? ' red' : '';
+      out.push(`<ellipse cx="${f(cx + 2)}" cy="${f(cy + 3.5)}" rx="21.5" ry="21" class="token-shadow"/>`);
       out.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="21" class="token"/>`);
       out.push(`<text x="${f(cx)}" y="${f(cy + 5.5)}" class="token-n${red}">${n}</text>`);
       const k = pips(n);
