@@ -20,6 +20,12 @@ export type Mode = '4' | '6';
 export interface PortSpec {
   /** null = generic 3:1, otherwise 2:1 for that resource. */
   resource: Resource | null;
+  /**
+   * Where the harbour is printed on the frame: the land hex (axial q, r) and the
+   * axial direction of the sea hex across the harbour edge. Without it the
+   * harbour is spaced evenly along the coast (5–6 players, pending a reference).
+   */
+  at?: { q: number; r: number; dir: [number, number] };
 }
 
 export interface ModeSpec {
@@ -29,8 +35,10 @@ export interface ModeSpec {
   /** Count per terrain index (forest, pasture, fields, hills, mountains, desert). */
   terrainCounts: readonly number[];
   tokens: readonly number[];
-  /** Harbour types in clockwise order around the frame. */
+  /** Harbours in clockwise order around the frame. */
   ports: readonly PortSpec[];
+  /** Hex orientation the board is drawn in: flat-top columns or pointy-top rows. */
+  orientation: 'flat' | 'pointy';
 }
 
 const g: PortSpec = { resource: null };
@@ -43,8 +51,22 @@ export const MODES: Record<Mode, ModeSpec> = {
     players: 4,
     terrainCounts: [4, 4, 4, 3, 3, 1],
     tokens: [2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12],
-    // 4 generic + one 2:1 per resource.
-    ports: [g, p('forest'), p('fields'), p('pasture'), g, p('mountains'), g, p('hills'), g],
+    // The printed frame, from the user's reference image (flat-top, columns
+    // 3-4-5-4-3), clockwise from the top. Axial directions: (0,-1) top,
+    // (1,-1) upper right, (1,0) lower right, (0,1) bottom, (-1,1) lower left,
+    // (-1,0) upper left. 4 generic + one 2:1 per resource.
+    ports: [
+      { resource: 'mountains', at: { q: 0, r: -2, dir: [0, -1] } },
+      { resource: null, at: { q: 1, r: -2, dir: [1, -1] } },
+      { resource: 'hills', at: { q: 2, r: -1, dir: [1, -1] } },
+      { resource: null, at: { q: 2, r: 0, dir: [1, 0] } },
+      { resource: 'fields', at: { q: 1, r: 1, dir: [0, 1] } },
+      { resource: 'pasture', at: { q: -1, r: 2, dir: [0, 1] } },
+      { resource: null, at: { q: -2, r: 2, dir: [-1, 1] } },
+      { resource: 'forest', at: { q: -2, r: 1, dir: [-1, 0] } },
+      { resource: null, at: { q: -1, r: -1, dir: [-1, 0] } },
+    ],
+    orientation: 'flat',
   },
   '6': {
     mode: '6',
@@ -58,6 +80,7 @@ export const MODES: Record<Mode, ModeSpec> = {
     ports: [
       g, p('pasture'), g, p('fields'), g, p('mountains'), g, p('pasture'), g, p('forest'), p('hills'),
     ],
+    orientation: 'pointy',
   },
 };
 

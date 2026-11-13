@@ -1,6 +1,7 @@
 // The board as a graph.
 //
-// Hexes use axial coordinates (q, r), pointy-top. Corners live on an exact
+// Hexes use axial coordinates (q, r), laid out pointy-top here; a flat-top
+// board is the same lattice turned 30° when drawn. Corners live on an exact
 // integer lattice: a hex centre is at (X, Y) = (2q + r, 3r) and its six corners
 // are offset by CORNER_OFFSETS. Pixel position is (X * √3/2, Y / 2) for unit
 // hex size. Keeping vertices as integers means no floating-point keys.
@@ -17,6 +18,16 @@ export interface Port extends PortSpec {
   vertices: [number, number];
   /** Land hex the harbour edge belongs to. */
   hex: number;
+}
+
+/** Corner lattice points shared by two hexes (two for neighbours). */
+function sharedCorners(a: Hex, b: Hex): string[] {
+  const corners = (h: Hex) => {
+    const [cx, cy] = hexCentre(h);
+    return CORNER_OFFSETS.map(([dx, dy]) => `${cx + dx},${cy + dy}`);
+  };
+  const cb = new Set(corners(b));
+  return corners(a).filter((k) => cb.has(k));
 }
 
 export interface Geometry {
@@ -150,9 +161,18 @@ function build(mode: Mode): Geometry {
   const specs = MODES[mode].ports;
   const step = coast.length / specs.length;
   const ports: Port[] = specs.map((spec, k) => {
+    if (spec.at) {
+      // Printed on the frame: the edge between the land hex and the sea hex in `dir`.
+      const { q, r, dir } = spec.at;
+      const hex = index.get(`${q},${r}`);
+      const sea = { q: q + dir[0], r: r + dir[1] };
+      if (hex === undefined || index.has(`${sea.q},${sea.r}`)) throw new Error(`Harbour ${k} is not on the coast`);
+      const [a, b] = sharedCorners({ q, r }, sea).map((key) => vertexId.get(key)!);
+      return { resource: spec.resource, vertices: [a, b], hex };
+    }
     const [a, b] = coast[Math.floor(k * step + step / 2) % coast.length];
     const hex = coastHex.get(a < b ? `${a},${b}` : `${b},${a}`)!;
-    return { ...spec, vertices: [a, b], hex };
+    return { resource: spec.resource, vertices: [a, b], hex };
   });
 
   return { mode, hexes, neighbours, hexEdges, dist, vertexXY, vertexHexes, vertexNeighbours, hexVertices, coast, ports };
