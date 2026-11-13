@@ -1,6 +1,6 @@
 // Draws a board as an SVG string. Pure: same board in, same markup out.
 
-import { DESERT, TERRAINS, isRed, pips, type Resource, type Terrain } from '../lib/components';
+import { DESERT, MODES, TERRAINS, isRed, pips, type Resource, type Terrain } from '../lib/components';
 import { geometry, hexCentre, latticeToPixel } from '../lib/geometry';
 import type { Board } from '../lib/board';
 
@@ -24,9 +24,12 @@ export const TERRAIN_LONG: Record<Terrain, string> = {
   desert: 'Desert',
 };
 
+// A flat-top board is the pointy-top lattice turned 30° clockwise.
+const COS30 = Math.sqrt(3) / 2;
+let flat = false;
 const px = (X: number, Y: number): [number, number] => {
   const [x, y] = latticeToPixel(X, Y);
-  return [x * SIZE, y * SIZE];
+  return flat ? [(x * COS30 - y / 2) * SIZE, (x / 2 + y * COS30) * SIZE] : [x * SIZE, y * SIZE];
 };
 const f = (v: number) => Math.round(v * 10) / 10;
 
@@ -77,6 +80,7 @@ export interface SvgOptions {
 
 export function boardSvg(board: Board, opts: SvgOptions = {}): string {
   const geo = geometry(board.mode);
+  flat = MODES[board.mode].orientation === 'flat';
   const { terrain, token } = board.layout;
 
   // Sea frame: the convex hull of the land, widened by FRAME with round
@@ -176,16 +180,21 @@ export function describe(board: Board): string {
   return `${players} Catan board`;
 }
 
-/** Text version of the board for screen readers: one line per row. */
+/** Text version of the board for screen readers: one line per row (flat boards: per column, top to bottom). */
 export function boardRows(board: Board): string[] {
   const geo = geometry(board.mode);
-  const rows = new Map<number, string[]>();
+  const isFlat = MODES[board.mode].orientation === 'flat';
+  const lines = new Map<number, { order: number; text: string }[]>();
   geo.hexes.forEach((h, i) => {
     const t = TERRAINS[board.layout.terrain[i]];
     const n = board.layout.token[i];
-    rows.set(h.r, [...(rows.get(h.r) ?? []), n ? `${TERRAIN_NAME[t]} ${n}` : TERRAIN_NAME[t]]);
+    const key = isFlat ? h.q : h.r;
+    const order = isFlat ? h.r : h.q;
+    lines.set(key, [...(lines.get(key) ?? []), { order, text: n ? `${TERRAIN_NAME[t]} ${n}` : TERRAIN_NAME[t] }]);
   });
-  return [...rows.values()].map((cells) => cells.join(', '));
+  return [...lines.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, cells]) => cells.sort((a, b) => a.order - b.order).map((c) => c.text).join(', '));
 }
 
 export type { Resource };
