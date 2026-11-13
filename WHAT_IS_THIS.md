@@ -17,7 +17,9 @@ same board, on any device, even offline. No server, no database, no login.
    columns and the 5–6 board pointy-top in rows, each matching its reference.
 3. **Hard rules, valid by construction.** A seeded PRNG (xoshiro128\*\*) drives randomised
    backtracking: deserts are placed uniformly at random, then terrain and numbers are placed hex by
-   hex, never breaking: no touching same resource, no touching 6/8, no touching equal numbers.
+   hex, never breaking: no touching same resource, no touching 6/8, no touching equal numbers,
+   and the 6s and 8s shared evenly across resources (4 players: on four different resources;
+   5–6 players: every resource has one, a single resource has two).
 4. **Balance by maths.** `pips(n) = 6 − |7 − n|`, `P(n) = pips/36`. The score (lower is fairer):
    - **start spots, 40%:** simulate the setup draft (each pick takes the best free corner under the
      distance rule; a corner's value is its pips plus one per different resource) and take

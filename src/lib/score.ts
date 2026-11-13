@@ -49,8 +49,8 @@ export interface Metrics {
  * already keeps same resources from touching; position randomness won.
  */
 export const SIGMA: Record<Mode, { start: number; production: number; hot: number }> = {
-  '4': { start: 0.99, production: 2.54, hot: 1.37 },
-  '6': { start: 0.83, production: 3.29, hot: 1.67 },
+  '4': { start: 0.99, production: 2.04, hot: 1.36 },
+  '6': { start: 0.84, production: 2.37, hot: 1.62 },
 };
 export const SHARE = { start: 0.4, production: 0.35, hot: 0.25 };
 

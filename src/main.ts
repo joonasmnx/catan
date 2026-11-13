@@ -63,7 +63,7 @@ function renderBalance(b: Board) {
     `The first and the ${ordinal(picks)} starting pick are ${plural(m.startSpread, 'pip')} apart.`;
 
   els.method.textContent =
-    `This board started as a random layout that already obeyed the three rules below. ` +
+    `This board started as a random layout that already obeyed the rules below. ` +
     `Then ${BUDGET[b.mode].toLocaleString('en-GB')} swaps of tiles and numbers were tried, ` +
     `and a swap was kept only if every rule still held and the board did not get much less fair. ` +
     `The fairest board seen is the one shown.`;
@@ -101,6 +101,10 @@ function renderBalance(b: Board) {
     check(!broken.has('same-resource'), 'No two touching tiles have the same resource') +
     check(!broken.has('red-touch'), 'No 6 or 8 touches another 6 or 8') +
     check(!broken.has('same-number'), 'No two touching tiles have the same number') +
+    check(
+      !broken.has('red-spread'),
+      b.mode === '4' ? 'The four 6s and 8s are on four different resources' : 'Every resource has a 6 or an 8, and none has more than two',
+    ) +
     check(!broken.has('wrong-counts'), `Official pieces: ${spec.terrainCounts.reduce((a, c) => a + c, 0)} tiles, ${spec.tokens.length} numbers, ${spec.ports.length} harbours`);
 }
 
