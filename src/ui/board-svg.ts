@@ -3,9 +3,10 @@
 import { DESERT, MODES, TERRAINS, isRed, pips, type Resource, type Terrain } from '../lib/components';
 import { geometry, hexCentre, latticeToPixel } from '../lib/geometry';
 import type { Board } from '../lib/board';
+import { tileArt } from './tile-art';
 
 const SIZE = 50; // hex circumradius in SVG units
-const FRAME = 52; // sea beyond the outermost land corner
+const FRAME = 62; // sea beyond the outermost land corner
 
 export const TERRAIN_NAME: Record<Terrain, string> = {
   forest: 'Wood',
@@ -33,29 +34,31 @@ const px = (X: number, Y: number): [number, number] => {
 };
 const f = (v: number) => Math.round(v * 10) / 10;
 
-/** Tile colours taken from the printed tiles; text classes keep 4.5:1 on each. */
+/** Ground colour of each tile's illustration; also the legend swatches. */
 export const TILE_COLOURS: Record<Terrain | 'sea' | 'land' | 'generic', string> = {
-  forest: '#2e5b30',
-  pasture: '#93c255',
-  fields: '#e8bb3f',
-  hills: '#b0502d',
-  mountains: '#646a70',
+  forest: '#2a6534',
+  pasture: '#9ccc5a',
+  fields: '#e9bd3c',
+  hills: '#a85429',
+  mountains: '#777c85',
   desert: '#dcc58e',
-  sea: '#3d7bab',
-  land: '#efe6cf',
+  sea: '#2f80c2',
+  land: '#ead9a6',
   generic: '#fbf8f1',
 };
 
 const SVG_CSS = [
   ...Object.entries(TILE_COLOURS).map(([k, v]) => `.t-${k}{fill:${v}}`),
   `.board-svg text{font-family:"Geist Variable",Geist,system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;text-anchor:middle}`,
-  `.frame{stroke:#3d7bab}`,
-  `.tile-name{font-size:12px;font-weight:500}`,
+  `.frame{stroke:#2f80c2}`,
+  `.shallows{fill:#6fb3e0;stroke:#6fb3e0;stroke-width:16;stroke-linejoin:round}`,
+  `.beach{stroke:#ead9a6;stroke-width:7;stroke-linejoin:round}`,
   `.ink-dark{fill:#1b1b16}.ink-light{fill:#ffffff}`,
-  `.token{fill:#f7efd9}`,
-  `.token-n{font-size:21px;font-weight:600;fill:#1b1b16}.token-n.red{fill:#b3261e}`,
-  `.pip{fill:#1b1b16}.pip.red{fill:#b3261e}`,
-  `.pier{fill:none;stroke:#efe6cf;stroke-width:3;stroke-linejoin:round}`,
+  `.token{fill:#efd9a7;stroke:#3b2a14;stroke-width:1.6}`,
+  `.token-n{font-size:23px;font-weight:700;fill:#1b1b16}.token-n.red{fill:#c62a1c}`,
+  `.pip{fill:#1b1b16}.pip.red{fill:#c62a1c}`,
+  `.pier{fill:none;stroke:#8a6a43;stroke-width:4;stroke-linecap:round}`,
+  `.port-disc{stroke:#ffffff;stroke-width:2}`,
   `.port-ratio{font-size:15px;font-weight:600}.port-name{font-size:11px;font-weight:500}`,
   `.caption{font-size:16px;font-weight:500;fill:#1b1b16}`,
 ].join('');
@@ -102,7 +105,9 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
   out.push(`<style>${opts.fontCss ?? ''}${SVG_CSS}</style>`);
   const hullPts = hull.map(([x, y]) => `${f(x)},${f(y)}`).join(' ');
   out.push(`<polygon points="${hullPts}" class="t-sea frame" stroke-width="${FRAME * 2}" stroke-linejoin="round"/>`);
-  for (const h of geo.hexes) out.push(`<polygon points="${hexPoints(...hexCentre(h))}" class="t-land"/>`);
+  // Shallow water, then the beach the tiles lie on.
+  for (const h of geo.hexes) out.push(`<polygon points="${hexPoints(...hexCentre(h))}" class="shallows"/>`);
+  for (const h of geo.hexes) out.push(`<polygon points="${hexPoints(...hexCentre(h))}" class="t-land beach"/>`);
 
   // Harbours: two piers from the coast edge to a badge in the sea.
   for (const port of geo.ports) {
@@ -110,9 +115,9 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     const [lx, ly] = px(...hexCentre(geo.hexes[port.hex]));
     const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
     const bx = mx + (mx - lx) * 0.7, by = my + (my - ly) * 0.7;
-    out.push(
-      `<path d="M${f(a[0])},${f(a[1])}L${f(bx)},${f(by)}L${f(b[0])},${f(b[1])}" class="pier"/>`,
-    );
+    // Two jetties from the harbour's corners out towards its marker.
+    const jetty = (p: number[]) => `M${f(p[0])},${f(p[1])}L${f(p[0] + (bx - p[0]) * 0.62)},${f(p[1] + (by - p[1]) * 0.62)}`;
+    out.push(`<path d="${jetty(a)}${jetty(b)}" class="pier"/>`);
     const cls = port.resource ? `t-${port.resource}` : 't-generic';
     out.push(`<g class="port" transform="translate(${f(bx)},${f(by)})">`);
     out.push(`<circle r="22" class="${cls} port-disc"/>`);
@@ -129,19 +134,18 @@ export function boardSvg(board: Board, opts: SvgOptions = {}): string {
     const [X, Y] = hexCentre(h);
     const [cx, cy] = px(X, Y);
     const t = TERRAINS[terrain[i]];
-    out.push(`<polygon points="${hexPoints(X, Y, 1.5)}" class="t-${t} tile"/>`);
-    out.push(
-      `<text x="${f(cx)}" y="${f(cy - 27)}" class="tile-name ${inkClass(t)}">${TERRAIN_NAME[t]}</text>`,
-    );
+    out.push(`<clipPath id="hex${i}"><polygon points="${hexPoints(X, Y, 3)}"/></clipPath>`);
+    out.push(`<polygon points="${hexPoints(X, Y, 3)}" class="t-${t} tile"/>`);
+    out.push(`<g clip-path="url(#hex${i})"><g transform="translate(${f(cx)},${f(cy)})">${tileArt(t, i * 31 + terrain[i])}</g></g>`);
     if (terrain[i] !== DESERT) {
       const n = token[i];
       const red = isRed(n) ? ' red' : '';
-      out.push(`<circle cx="${f(cx)}" cy="${f(cy + 4)}" r="23" class="token"/>`);
-      out.push(`<text x="${f(cx)}" y="${f(cy + 10.5)}" class="token-n${red}">${n}</text>`);
+      out.push(`<circle cx="${f(cx)}" cy="${f(cy)}" r="21" class="token"/>`);
+      out.push(`<text x="${f(cx)}" y="${f(cy + 5.5)}" class="token-n${red}">${n}</text>`);
       const k = pips(n);
       for (let d = 0; d < k; d++) {
-        const dx = (d - (k - 1) / 2) * 5;
-        out.push(`<circle cx="${f(cx + dx)}" cy="${f(cy + 19)}" r="1.9" class="pip${red}"/>`);
+        const dx = (d - (k - 1) / 2) * 4.8;
+        out.push(`<circle cx="${f(cx + dx)}" cy="${f(cy + 13.5)}" r="1.8" class="pip${red}"/>`);
       }
     }
   });
@@ -180,7 +184,7 @@ export function describe(board: Board): string {
   return `${players} Catan board`;
 }
 
-/** Text version of the board for screen readers: one line per row (flat boards: per column, top to bottom). */
+/** Text version of the board for screen readers: one line per row, top to bottom (flat boards: per column, left to right). */
 export function boardRows(board: Board): string[] {
   const geo = geometry(board.mode);
   const isFlat = MODES[board.mode].orientation === 'flat';
