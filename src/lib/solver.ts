@@ -6,7 +6,7 @@
 // how many of each remain. A search that runs past NODE_LIMIT restarts with a
 // fresh order from the same PRNG stream, so the result stays deterministic.
 
-import { DESERT, MODES, isRed, type Mode } from './components';
+import { DESERT, MODES, RESOURCES, isRed, type Mode } from './components';
 import { geometry } from './geometry';
 import { shuffle, type Rng } from './prng';
 import type { Layout } from './rules';
@@ -36,20 +36,31 @@ export function randomValidLayout(mode: Mode, rng: Rng): Layout {
   const tokenValues = [...new Set(spec.tokens)].sort((a, b) => a - b);
   const tokenCounts = tokenValues.map((v) => spec.tokens.filter((t) => t === v).length);
   const land = range(n).filter((h) => terrain[h] !== DESERT);
+
+  // 6s and 8s first. Each resource gets its even share (one extra for `spare`
+  // random resources), on random tiles of that resource; redraw until no two
+  // reds touch. Then which red is a 6 and which an 8 is shuffled.
+  const reds = spec.tokens.filter(isRed);
+  const floor = Math.floor(reds.length / RESOURCES.length);
+  const spare = reds.length - floor * RESOURCES.length;
+  let redHexes: number[];
+  do {
+    const extra = new Set(shuffle(rng, range(RESOURCES.length)).slice(0, spare));
+    redHexes = RESOURCES.flatMap((_, t) =>
+      shuffle(rng, land.filter((h) => terrain[h] === t)).slice(0, floor + (extra.has(t) ? 1 : 0)),
+    );
+  } while (redHexes.some((a) => redHexes.some((b) => a !== b && geo.neighbours[a].includes(b))));
+  shuffle(rng, reds);
+  const preset = new Map(redHexes.map((h, i) => [h, tokenValues.indexOf(reds[i])]));
+  const restCounts = tokenCounts.map((c, vi) => (isRed(tokenValues[vi]) ? 0 : c));
+
   const tokenIdx = solve(
     rng,
-    () => bfsOrder(rng, geo.neighbours, land),
-    tokenCounts,
+    () => bfsOrder(rng, geo.neighbours, land.filter((h) => !preset.has(h))),
+    restCounts,
     n,
-    (h, vi, placed) => {
-      const v = tokenValues[vi];
-      return geo.neighbours[h].every((nb) => {
-        const o = placed[nb];
-        if (o < 0) return true;
-        const w = tokenValues[o];
-        return w !== v && !(isRed(v) && isRed(w));
-      });
-    },
+    (h, vi, placed) => geo.neighbours[h].every((nb) => placed[nb] !== vi),
+    preset,
   );
   const token = tokenIdx.map((vi, h) => (terrain[h] === DESERT ? 0 : tokenValues[vi]));
   return { terrain, token };
@@ -57,7 +68,8 @@ export function randomValidLayout(mode: Mode, rng: Rng): Layout {
 
 /**
  * Assign a value index to every hex in order() so that ok() holds, using each
- * value at most counts[value] times. Unassigned slots are -1.
+ * value at most counts[value] times. Unassigned slots are -1; `preset` hexes
+ * are fixed beforehand and must not appear in order().
  */
 function solve(
   rng: Rng,
@@ -65,10 +77,12 @@ function solve(
   counts: number[],
   n: number,
   ok: (h: number, value: number, placed: number[]) => boolean,
+  preset?: Map<number, number>,
 ): number[] {
   for (;;) {
     const seq = order();
     const placed = new Array<number>(n).fill(-1);
+    preset?.forEach((v, h) => (placed[h] = v));
     const left = [...counts];
     let nodes = 0;
 

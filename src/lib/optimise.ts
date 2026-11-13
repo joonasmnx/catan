@@ -14,7 +14,7 @@
 
 import { DESERT, type Mode } from './components';
 import { fastScore, metrics, type Metrics } from './score';
-import { hexOk, type Layout } from './rules';
+import { hexOk, redSpreadOk, type Layout } from './rules';
 import type { Rng } from './prng';
 
 export const BUDGET: Record<Mode, number> = { '4': 12000, '6': 16000 };
@@ -41,7 +41,7 @@ export function optimise(mode: Mode, start: Layout, rng: Rng, budget = BUDGET[mo
     if (swapTok) swap(cur.token, a, b);
     if (swapTer) swap(cur.terrain, a, b);
 
-    let accept = hexOk(mode, cur, a) && hexOk(mode, cur, b);
+    let accept = hexOk(mode, cur, a) && hexOk(mode, cur, b) && redSpreadOk(cur);
     let next = curScore;
     if (accept) {
       next = fastScore(mode, cur);

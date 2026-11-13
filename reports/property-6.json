@@ -1,7 +1,7 @@
 {
   "mode": "6",
   "seeds": 10000,
-  "msPerBoard": 25.5856083529,
+  "msPerBoard": 26.0819049208,
   "violationCount": 0,
   "badBoards": 0,
   "unique": 10000,
@@ -12,47 +12,47 @@
     "p": 0.8098627232449195
   },
   "exchangeability": {
-    "chi": 241.43174948044367,
+    "chi": 225.71577230492184,
     "df": 240,
-    "p": 0.46190298999920176,
-    "minP": 0.0007325536491508133,
+    "p": 0.7372197254037842,
+    "minP": 0.0021218762966902505,
     "tests": 210
   },
   "countTest": {
     "positions": 30,
-    "minP": 1.3346764626831487e-7,
-    "significantAt001": 3,
-    "maxDev": 0.015733333333333325,
-    "maxDevAt": "hex 8, terrain 3"
+    "minP": 3.78125175615196e-8,
+    "significantAt001": 5,
+    "maxDev": 0.018233333333333327,
+    "maxDevAt": "hex 19, terrain 4"
   },
   "score": {
     "random": {
-      "mean": 4347.446,
-      "median": 4352,
-      "p95": 5332,
-      "worst": 6582,
-      "best": 1820
+      "mean": 4384.5534,
+      "median": 4358,
+      "p95": 5400,
+      "worst": 6474,
+      "best": 2172
     },
     "optimised": {
-      "mean": 1211.234,
-      "median": 1188,
-      "p95": 1670,
-      "worst": 2270,
-      "best": 406
+      "mean": 1305.2136,
+      "median": 1240,
+      "p95": 1716,
+      "worst": 2192,
+      "best": 456
     }
   },
   "metricMeans": {
     "random": {
-      "startSpread": 4.3559,
-      "productionSpread": 9.2587,
-      "hotPairs": 8.4432,
+      "startSpread": 4.408,
+      "productionSpread": 6.9095,
+      "hotPairs": 8.2061,
       "sameResourceNear": 24.1503
     },
     "optimised": {
-      "startSpread": 1.007,
-      "productionSpread": 1.0225,
-      "hotPairs": 4.1165,
-      "sameResourceNear": 23.6456
+      "startSpread": 1.0967,
+      "productionSpread": 1.0443,
+      "hotPairs": 4.082,
+      "sameResourceNear": 23.6612
     }
   }
 }

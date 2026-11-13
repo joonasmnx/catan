@@ -32,7 +32,7 @@ test('generates both modes with no errors and no sideways scroll', async ({ page
   await expect(page.locator('h1')).toHaveText(/^Board 6-/);
   await expect(page.locator('#board .token-n')).toHaveCount(28);
   await expect(page.locator('#board .port')).toHaveCount(11);
-  await expect(page.locator('#checks .ok')).toHaveCount(4);
+  await expect(page.locator('#checks .ok')).toHaveCount(5);
   await noHorizontalScroll(page);
 
   await page.getByRole('button', { name: 'Generate' }).click();

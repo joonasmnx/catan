@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DESERT } from '../../src/lib/components';
 import { generate } from '../../src/lib/board';
 import { geometry } from '../../src/lib/geometry';
-import { violations, type Layout } from '../../src/lib/rules';
+import { redCounts, redSpreadOk, violations, type Layout } from '../../src/lib/rules';
 
 const clone = (l: Layout): Layout => ({ terrain: [...l.terrain], token: [...l.token] });
 
@@ -36,6 +36,22 @@ describe('hard rules', () => {
     const nb2 = geo.neighbours[sixes[0]].find((h) => m.terrain[h] !== DESERT)!;
     [m.token[nb2], m.token[sixes[1]]] = [m.token[sixes[1]], m.token[nb2]];
     expect(violations('4', m).some((v) => v.kind === 'same-number' || v.kind === 'red-touch')).toBe(true);
+  });
+
+  it('shares the 6s and 8s evenly across resources, and catches a board that does not', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      expect(redCounts(generate('4', seed).layout).sort().join('')).toBe('01111');
+      expect(redCounts(generate('6', seed).layout).sort().join('')).toBe('11112');
+      // The random start obeys it too, so it is true by construction.
+      expect(redSpreadOk(generate('4', seed).start.layout)).toBe(true);
+    }
+    // Move a red onto a resource that already has one: swap it with a non-red
+    // token on another tile of an already-red resource.
+    const l = clone(board.layout);
+    const reds = l.token.map((t, h) => (t === 6 || t === 8 ? h : -1)).filter((h) => h >= 0);
+    const target = l.terrain.findIndex((t, h) => t === l.terrain[reds[0]] && !reds.includes(h));
+    [l.token[reds[1]], l.token[target]] = [l.token[target], l.token[reds[1]]];
+    expect(violations('4', l).some((v) => v.kind === 'red-spread')).toBe(true);
   });
 
   it('catches a token on the desert and wrong counts', () => {
