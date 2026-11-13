@@ -12,8 +12,9 @@ same board, on any device, even offline. No server, no database, no login.
    1 desert), 18 numbers, 9 harbours. 5–6 players: 30 hexes (6, 6, 6, 5, 5, 2 deserts), 28 numbers
    (two each of 2 and 12, three of the rest), 11 harbours. Source: the 5–6 Player Extension
    rulebook's component list (the extension adds 11 hexes and 2 harbours to the base game).
-   Harbours are fixed, as printed on the frame. The 4-player ones follow the reference image
-   exactly (locked by a test); the 5–6 ones are still evenly spaced until a reference is added.
+   Harbours are fixed, as printed on the frame: both modes follow the owner's reference
+   images edge for edge, and unit tests lock them. The 4-player board is drawn flat-top in
+   columns and the 5–6 board pointy-top in rows, each matching its reference.
 3. **Hard rules, valid by construction.** A seeded PRNG (xoshiro128\*\*) drives randomised
    backtracking: deserts are placed uniformly at random, then terrain and numbers are placed hex by
    hex, never breaking: no touching same resource, no touching 6/8, no touching equal numbers.
@@ -54,7 +55,7 @@ of position won; the no-touching rule already keeps same resources apart, and th
 | Path | Purpose |
 | --- | --- |
 | `src/lib/` | All logic, pure functions: `geometry`, `components`, `prng`, `solver`, `rules`, `score`, `optimise`, `board` |
-| `src/ui/board-svg.ts` | Draws a board as SVG |
+| `src/ui/board-svg.ts`, `src/ui/tile-art.ts` | Draws a board as SVG, with illustrated tiles made of flat shapes |
 | `src/main.ts` | The page: URL codes, share, save image, print |
 | `vite.config.ts` | Build, plus the generated offline service worker |
 | `tests/` | Unit, property and e2e tests |

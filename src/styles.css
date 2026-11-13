@@ -118,8 +118,8 @@ h1 { font-size: var(--fs-title); line-height: 32px; font-weight: 600; letter-spa
 /* A narrow board is its own composition: names would render under 11px, so
    colour and the production legend carry them; numbers and harbour ratios grow so they stay at 11px or more at 390px. */
 @container (max-width: 600px) {
-  .board-svg .tile-name, .board-svg .port-name { display: none; }
-  .board-svg .token-n { font-size: 25px; transform: translateY(1px); }
+  .board-svg .port-name { display: none; }
+  .board-svg .token-n { font-size: 26px; transform: translateY(1px); }
   .board-svg .port-ratio { font-size: 20px; transform: translateY(2px); }
   .board-svg .port-ratio.named { transform: translateY(7px); }
 }

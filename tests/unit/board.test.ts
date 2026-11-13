@@ -104,3 +104,34 @@ describe('4-player harbours match the printed frame', () => {
     });
   });
 });
+
+describe('5–6 player harbours match the printed frame', () => {
+  const ports = () =>
+    [...boardSvg(generate('6', 1)).matchAll(/<g class="port" transform="translate\(([-\d.]+),([-\d.]+)\)">(.*?)<\/g>/g)].map((m) => ({
+      x: Number(m[1]),
+      y: Number(m[2]),
+      label: [...m[3].matchAll(/>([^<]+)<\/text>/g)].map((t) => t[1]).join(' '),
+    }));
+
+  it('has the reference types, clockwise from the top left', () => {
+    expect(ports().map((p) => p.label)).toEqual(
+      ['3:1', '2:1 Wool', '3:1', '3:1', '2:1 Brick', '2:1 Wool', '2:1 Wood', '3:1', '2:1 Grain', '3:1', '2:1 Ore'],
+    );
+    const list = ports();
+    const angles = list.map((p) => (Math.atan2(p.x, -p.y) * 180) / Math.PI);
+    // Starts upper left (negative angle), then runs clockwise.
+    const turned = angles.map((a) => (a - angles[0] + 360) % 360);
+    for (let i = 1; i < turned.length; i++) expect(turned[i]).toBeGreaterThan(turned[i - 1]);
+  });
+
+  it('sits on coast edges 0, 3, 7, 12, 15, 18, 21, 24, 27, 30, 33 counted clockwise from the top-left hex', () => {
+    const geo = geometry('6');
+    const key = (a: number, b: number) => (a < b ? `${a},${b}` : `${b},${a}`);
+    // Clockwise coast, re-based to the upper-left edge of the first hex of the top row.
+    const first = geo.coast.findIndex(([a, b]) => key(a, b) === key(...geo.ports[0].vertices));
+    const order = [...geo.coast.slice(first), ...geo.coast.slice(0, first)].map(([a, b]) => key(a, b));
+    expect(order.length).toBe(38);
+    expect(geo.ports.map((p) => order.indexOf(key(...p.vertices)))).toEqual([0, 3, 7, 12, 15, 18, 21, 24, 27, 30, 33]);
+    expect(geo.hexes[geo.ports[0].hex]).toEqual({ q: 0, r: -3 });
+  });
+});

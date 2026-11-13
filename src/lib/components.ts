@@ -23,7 +23,7 @@ export interface PortSpec {
   /**
    * Where the harbour is printed on the frame: the land hex (axial q, r) and the
    * axial direction of the sea hex across the harbour edge. Without it the
-   * harbour is spaced evenly along the coast (5–6 players, pending a reference).
+   * harbour is spaced evenly along the coast.
    */
   at?: { q: number; r: number; dir: [number, number] };
 }
@@ -37,12 +37,10 @@ export interface ModeSpec {
   tokens: readonly number[];
   /** Harbours in clockwise order around the frame. */
   ports: readonly PortSpec[];
-  /** Hex orientation the board is drawn in: flat-top columns or pointy-top rows. */
+  /** How the board is drawn: flat-top hexes in columns (the lattice turned 30°), or pointy-top hexes in rows. */
   orientation: 'flat' | 'pointy';
 }
 
-const g: PortSpec = { resource: null };
-const p = (resource: Resource): PortSpec => ({ resource });
 
 export const MODES: Record<Mode, ModeSpec> = {
   '4': {
@@ -76,9 +74,25 @@ export const MODES: Record<Mode, ModeSpec> = {
     tokens: [
       2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 8, 8, 8, 9, 9, 9, 10, 10, 10, 11, 11, 11, 12, 12,
     ],
+    // The printed 5–6 frame, from the user's reference image (pointy-top, rows
+    // 3-4-5-6-5-4-3), clockwise from the top left. Axial directions here:
+    // (1,0) right, (1,-1) upper right, (0,-1) upper left, (-1,0) left,
+    // (-1,1) lower left, (0,1) lower right. Counting coast edges clockwise the
+    // harbours sit at 0, 3, 7, 12, 15, 18, 21, 24, 27, 30, 33 of 38: the base
+    // frame's 3-4-3 spacing with the extension pieces let in.
     // 5 generic + two wool + one of each other resource.
     ports: [
-      g, p('pasture'), g, p('fields'), g, p('mountains'), g, p('pasture'), g, p('forest'), p('hills'),
+      { resource: null, at: { q: 0, r: -3, dir: [0, -1] } },
+      { resource: 'pasture', at: { q: 1, r: -3, dir: [1, -1] } },
+      { resource: null, at: { q: 2, r: -2, dir: [1, -1] } },
+      { resource: null, at: { q: 2, r: 0, dir: [1, 0] } },
+      { resource: 'hills', at: { q: 1, r: 1, dir: [0, 1] } },
+      { resource: 'pasture', at: { q: -1, r: 3, dir: [1, 0] } },
+      { resource: 'forest', at: { q: -2, r: 3, dir: [0, 1] } },
+      { resource: null, at: { q: -3, r: 3, dir: [-1, 1] } },
+      { resource: 'fields', at: { q: -3, r: 2, dir: [-1, 0] } },
+      { resource: null, at: { q: -3, r: 0, dir: [-1, 1] } },
+      { resource: 'mountains', at: { q: -2, r: -1, dir: [-1, 0] } },
     ],
     orientation: 'pointy',
   },
